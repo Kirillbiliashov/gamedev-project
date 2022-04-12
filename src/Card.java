@@ -7,6 +7,7 @@ public class Card {
     this.rank = rank;
   }
 
+  @Override
   public String toString() {
     return rank.toString().toLowerCase() + " of " + suit.toString().toLowerCase();
   }
