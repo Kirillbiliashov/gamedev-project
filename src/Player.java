@@ -1,18 +1,18 @@
 import java.util.*;
 
-public class Player {
-  private String nickname;
+public final class Player {
+  private final String nickname;
   private int balance;
   private Card[] hand = new Card[2];
   private boolean isBB = false;
   private boolean isSB = false;
   private boolean folded = false;
-  public Player(int balance, String nickname) {
+  public Player(final int balance, final String nickname) {
     this.balance = balance;
     this.nickname = nickname;
   }
 
-  public void dealHand(List<Card> cards) {
+  public void dealHand(final List<Card> cards) {
     hand = Cards.deal(cards, 2);
   }
 
@@ -38,7 +38,7 @@ public class Player {
     this.isBB = false;
   }
 
-  public void changeBalance(int delta) {
+  public void changeBalance(final int delta) {
     balance += delta;
   }
   public void setFolded() {

@@ -1,8 +1,8 @@
-public class Card {
-  private Suit suit;
-  private Rank rank;
+public final class Card {
+  private final Suit suit;
+  private final Rank rank;
 
-  public Card(Suit suit, Rank rank) {
+  public Card(final Suit suit, final Rank rank) {
     this.suit = suit;
     this.rank = rank;
   }
