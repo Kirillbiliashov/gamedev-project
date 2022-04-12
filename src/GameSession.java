@@ -18,11 +18,11 @@ public class GameSession {
     Cards.shuffle(cards);
     for (int i = 0; i < PLAYERS_SEATED; i++) {
       int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE);
-      boolean isYou = i == 0;
-      Player player = new Player(isYou ? yourBalance : playerBalance, isYou ? nickname : "Player " + (i + 1));
+      boolean isUser = i == 0;
+      Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
       player.dealHand(cards);
       Card[] hand = player.getHand();
-      if (isYou) System.out.println(nickname + ", your hand is " + hand[0].toString() + " and " + hand[1].toString());
+      if (isUser) System.out.println(nickname + ", your hand is " + hand[0].toString() + " and " + hand[1].toString());
       players[i] = player;
     }
     assignPositions();
@@ -83,7 +83,7 @@ public class GameSession {
     this.raise(player, roundedRaiseSum);
   }
 
-  public void call(Player player) {
+  private void call(Player player) {
     int callSum = currRaiseSum > 0 ? currRaiseSum : BB_SIZE;
     pot += callSum;
     player.changeBalance(-callSum);
