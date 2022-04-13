@@ -50,15 +50,18 @@ public final class GameSession {
     while (playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
       if (!player.didFold()) {
-        final int randomDecisionNum = Helpers.randomInRange(0, 10);
-        if (currIdx == 0) makeUserTurn(player);
-        else if (currIdx == bbIdx && currRaiseSum == 0) {
-          if (randomDecisionNum >= MIN_RAISE_NUMBER) raise(player);
-          else System.out.println("Player " + player.getNickname() + " (big blind) checked");
-        } else {
-          if (randomDecisionNum < MIN_CALL_NUMBER) fold(player);
-          else if (randomDecisionNum < MIN_RAISE_NUMBER) call(player);
-          else raise(player);
+        if (player.getBalance() == 0) System.out.println("Player " + player.getNickname() + " went al in");
+        else {
+          final int randomDecisionNum = Helpers.randomInRange(0, 10);
+          if (currIdx == 0) makeUserTurn(player);
+          else if (currIdx == bbIdx && currRaiseSum == 0) {
+            if (randomDecisionNum >= MIN_RAISE_NUMBER) raise(player);
+            else System.out.println("Player " + player.getNickname() + " (big blind) checked, balance: " + player.getBalance());
+          } else {
+            if (randomDecisionNum < MIN_CALL_NUMBER) fold(player);
+            else if (randomDecisionNum < MIN_RAISE_NUMBER) call(player);
+            else raise(player);
+          }
         }
       } else System.out.println("Player " + player.getNickname() + " folded");
       if (++currIdx == PLAYERS_SEATED) currIdx = 0;
@@ -66,51 +69,65 @@ public final class GameSession {
     }
   }
 
-  private void raise(Player player, int raiseSum) {
+  private void raise(final Player player, final int raiseSum) {
     currRaiseSum = raiseSum;
     pot += raiseSum;
     player.changeBalance(-raiseSum);
-    System.out.println(player.getNickname() + " raised " + raiseSum);
+    System.out.println(player.getNickname() + " raised " + raiseSum + ", balance: " + player.getBalance());
     playersPlayed = 0;
   }
 
   private void raise(Player player) {
     final int MAX_BB_SIZE_RAISE = 10;
-    final int randomRaiseSum = Helpers.randomInRange(SB_SIZE, BB_SIZE * MAX_BB_SIZE_RAISE);
-    final int roundedRaiseSum = randomRaiseSum - randomRaiseSum % SB_SIZE + currRaiseSum;
-    this.raise(player, roundedRaiseSum);
+    final int balance = player.getBalance();
+    if (balance < currRaiseSum) call(player, balance);
+    else {
+      final int randomRaiseSum = Helpers.randomInRange(SB_SIZE, BB_SIZE * MAX_BB_SIZE_RAISE);
+      final int roundedRaiseSum = randomRaiseSum - randomRaiseSum % SB_SIZE + currRaiseSum;
+      this.raise(player, roundedRaiseSum);
+    }
   }
 
-  private void call(Player player) {
-    final int callSum = currRaiseSum > 0 ? currRaiseSum : BB_SIZE;
+  private void call(final Player player) {
+    int callSum = currRaiseSum > 0 ? currRaiseSum : BB_SIZE;
+    callSum = Math.min(player.getBalance(), callSum);
+    call(player, callSum);
+  }
+  private void call(final Player player, final int callSum) {
     pot += callSum;
     player.changeBalance(-callSum);
-    System.out.println("Player " + player.getNickname() + " called " + callSum);
+    System.out.println("Player " + player.getNickname() + " called " + callSum + ", balance: " + player.getBalance());
   }
 
-  private void fold(Player player) {
+  private void fold(final Player player) {
     player.setFolded();
-    System.out.println("Player " + player.getNickname() + " folded");
+    System.out.println("Player " + player.getNickname() + " folded, balance: " + player.getBalance());
   }
 
-  private void makeUserTurn(Player player) {
+  private void makeUserTurn(final Player player) {
+    final int balance = player.getBalance();
     final Scanner input = new Scanner(System.in);
     final boolean userCanCheck = bbIdx == 0 && currRaiseSum == 0;
-    System.out.print("It's your turn. Enter R to raise, C to " + (userCanCheck ? "check: " : "call, F to fold: "));
+    final boolean userCanRaise = balance > currRaiseSum;
+    System.out.print("Your balance is " + balance + ". Enter " + (userCanRaise ? "R to raise, " : "") + "C to "
+        + (userCanCheck ? "check: " : "call, F to fold: "));
     final char action = input.nextLine().charAt(0);
-    if (userCanCheck && action == 'C')
-      System.out.println("Player " + player.getNickname() + " checked");
+    if (userCanCheck && action == 'C') System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
     else {
       if (action == 'F') fold(player);
       else if (action == 'C') call(player);
       else if (action == 'R') {
-        int raiseSum = 0;
-        while (raiseSum <= BB_SIZE || raiseSum < currRaiseSum) {
-          System.out.print("Enter raise sum: ");
-          raiseSum = input.nextInt();
-          input.nextLine();
+        if (!userCanRaise) call(player, balance);
+        else {
+          int raiseSum = 0;
+          while (raiseSum <= BB_SIZE || raiseSum < currRaiseSum) {
+            System.out.print("Enter raise sum: ");
+            raiseSum = input.nextInt();
+            input.nextLine();
+          }
+          raiseSum = Math.min(balance, raiseSum);
+          raise(player, raiseSum);
         }
-        raise(player, raiseSum);
       }
     }
   }
