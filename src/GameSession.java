@@ -7,6 +7,7 @@ public final class GameSession {
   private static final int BB_SIZE = 100;
   private static final int SB_SIZE = 50;
   private final List<Card> cards = Cards.getAll();
+  private final List<Card> tableCards = new ArrayList<>();
   private final Player[] players = new Player[PLAYERS_SEATED];
   private int pot = 0;
   private int bbIdx;
@@ -27,6 +28,17 @@ public final class GameSession {
     assignPositions();
     performBettingRound();
     System.out.println("Pot is " + pot);
+    Helpers.transport(cards, tableCards, 3);
+    System.out.print("Flop: ");
+    presentTableCards();
+    Helpers.transport(cards, tableCards, 1);
+    System.out.print("Turn: ");
+    presentTableCards();
+    System.out.print("River: ");
+    Helpers.transport(cards, tableCards, 1);
+    presentTableCards();
+
+
   }
 
   private void assignPositions() {
@@ -130,5 +142,12 @@ public final class GameSession {
         }
       }
     }
+  }
+  private void presentTableCards() {
+    final int size = tableCards.size();
+    for (int i = 0; i < size; i++) {
+      System.out.print(tableCards.get(i).toString() + (i == size - 1 ? "." : ", "));
+    }
+    System.out.println();
   }
 }
