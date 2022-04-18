@@ -20,4 +20,10 @@ public final class Helpers {
     return true;
   }
 
+  public static String replaceSymbol(String str, String oldStr, String newStr) {
+    StringBuilder sb = new StringBuilder(str);
+    int idx = sb.indexOf(oldStr);
+    return idx >= 0 ? replaceSymbol(sb.replace(idx, idx + 1, newStr).toString(), oldStr, newStr) : str;
+  }
+
 }

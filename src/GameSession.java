@@ -9,10 +9,13 @@ public final class GameSession {
   private final List<Card> cards = Cards.getAll();
   private final List<Card> tableCards = new ArrayList<>();
   private final Player[] players = new Player[PLAYERS_SEATED];
-  private int pot = 0;
+  private int pot;
   private int bbIdx;
-  private int currRaiseSum = 0;
-  private int playersPlayed = 0;
+  private int currRaiseSum;
+  private int playersPlayed;
+  private int prevRoundRaiseSum;
+  private boolean isPreflop = true;
+  private String[] rounds = { "Flop", "River", "Turn" };
 
   public void start(final int yourBalance, final String nickname) {
     Cards.shuffle(cards);
@@ -22,25 +25,22 @@ public final class GameSession {
       final Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
       player.dealHand(cards);
       final List<Card> hand = player.getHand();
-      if (isUser) System.out.println(nickname + ", your hand is " + hand.get(0).toString() + " and " + hand.get(1).toString());
+      if (isUser) System.out.println(nickname + ", your hand is " + handDescription(hand));
       players[i] = player;
     }
     assignPositions();
     performBettingRound();
     System.out.println("Pot is " + pot);
-    Helpers.transport(cards, tableCards, 3);
-    System.out.print("Flop: ");
-    presentTableCards();
-    printCombination();
-    Helpers.transport(cards, tableCards, 1);
-    System.out.print("Turn: ");
-    presentTableCards();
-    printCombination();
-    System.out.print("River: ");
-    Helpers.transport(cards, tableCards, 1);
-    presentTableCards();
-    printCombination();
-
+    for (int i = 0; i < rounds.length; i++) {
+      Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
+      assignCombinations();
+      System.out.print(rounds[i] + ": ");
+      presentTableCards();
+      printCombination();
+      performBettingRound();
+    }
+    presentCombinations();
+    decideWinner();
   }
 
   private void assignPositions() {
@@ -68,7 +68,7 @@ public final class GameSession {
         else {
           final int randomDecisionNum = Helpers.randomInRange(0, 10);
           if (currIdx == 0) makeUserTurn(player);
-          else if (currIdx == bbIdx && currRaiseSum == 0) {
+          else if (isPreflop ? currIdx == bbIdx && currRaiseSum == 0 : currRaiseSum == prevRoundRaiseSum) {
             if (randomDecisionNum >= MIN_RAISE_NUMBER) raise(player);
             else System.out.println("Player " + player.getNickname() + " (big blind) checked, balance: " + player.getBalance());
           } else {
@@ -81,6 +81,9 @@ public final class GameSession {
       if (++currIdx == PLAYERS_SEATED) currIdx = 0;
       playersPlayed++;
     }
+    playersPlayed = 0;
+    if (isPreflop) isPreflop = false;
+    prevRoundRaiseSum = currRaiseSum;
   }
 
   private void raise(final Player player, final int raiseSum) {
@@ -91,7 +94,7 @@ public final class GameSession {
     playersPlayed = 0;
   }
 
-  private void raise(Player player) {
+  private void raise(final Player player) {
     final int MAX_BB_SIZE_RAISE = 10;
     final int balance = player.getBalance();
     if (balance < currRaiseSum) call(player, balance);
@@ -107,6 +110,7 @@ public final class GameSession {
     callSum = Math.min(player.getBalance(), callSum);
     call(player, callSum);
   }
+
   private void call(final Player player, final int callSum) {
     pot += callSum;
     player.changeBalance(-callSum);
@@ -121,7 +125,7 @@ public final class GameSession {
   private void makeUserTurn(final Player player) {
     final int balance = player.getBalance();
     final Scanner input = new Scanner(System.in);
-    final boolean userCanCheck = bbIdx == 0 && currRaiseSum == 0;
+    final boolean userCanCheck = isPreflop ? bbIdx == 0 && currRaiseSum == 0 : currRaiseSum == prevRoundRaiseSum;
     final boolean userCanRaise = balance > currRaiseSum;
     System.out.print("Your balance is " + balance + ". Enter " + (userCanRaise ? "R to raise, " : "") + "C to "
         + (userCanCheck ? "check: " : "call, F to fold: "));
@@ -145,6 +149,7 @@ public final class GameSession {
       }
     }
   }
+
   private void presentTableCards() {
     final int size = tableCards.size();
     for (int i = 0; i < size; i++) {
@@ -152,28 +157,63 @@ public final class GameSession {
     }
     System.out.println();
   }
+
+  private void assignCombinations() {
+    for (final Player player : players) {
+      final List<Card> playerHand = new ArrayList<>(player.getHand());
+      playerHand.addAll(tableCards);
+      if (Cards.isRoyalFlush(playerHand)) {
+        player.setCombination(Combination.ROYAL_FLUSH);
+      } else if (Cards.isStraightFlush(playerHand)) {
+        player.setCombination(Combination.STRAIGHT_FLUSH);
+      } else if (Cards.isFourOfKind(playerHand)) {
+        player.setCombination(Combination.FOUR_OF_A_KIND);
+      } else if (Cards.isFullHouse(playerHand)) {
+        player.setCombination(Combination.FULL_HOUSE);
+      } else if (Cards.isFlush(playerHand)) {
+        player.setCombination(Combination.FLUSH);
+      } else if (Cards.isStraight(playerHand)) {
+        player.setCombination(Combination.STRAIGHT);
+      } else if (Cards.isThreeOfKind(playerHand)) {
+        player.setCombination(Combination.THREE_OF_A_KIND);
+      } else if (Cards.isTwoPairs(playerHand)) {
+        player.setCombination(Combination.TWO_PAIRS);
+      } else if (Cards.isPair(playerHand)) {
+        player.setCombination(Combination.PAIR);
+      }
+    }
+  }
+
   private void printCombination() {
-    Player user = players[0];
-    List<Card> userHand = new ArrayList<>(user.getHand());
-    userHand.addAll(tableCards);
-    if (Cards.isRoyalFlush(userHand)) {
-      System.out.println("Your combination: royal flush");
-    } else if (Cards.isStraightFlush(userHand)) {
-      System.out.println("Your combination: straight flush");
-    } else if (Cards.isFourOfKind(userHand)) {
-      System.out.println("Your combination: four of a kind");
-    } else if (Cards.isFullHouse(userHand)) {
-      System.out.println("Your combination: full house");
-    } else if (Cards.isFlush(userHand)) {
-      System.out.println("Your combination: flush");
-    } else if (Cards.isStraight(userHand)) {
-      System.out.println("Your combination: straight");
-    } else if (Cards.isThreeOfKind(userHand)) {
-      System.out.println("Your combination: three of a kind");
-    } else if (Cards.isTwoPairs(userHand)) {
-      System.out.println("Your combination: two pairs");
-    } else if (Cards.isPair(userHand)) {
-      System.out.println("Your combination: pair");
-    } else System.out.println("Your combination: high card");
+    final Player user = players[0];
+    final Combination combination = user.getCombination();
+    System.out.println("Your combination is " + combination.toString());
+  }
+
+  private void presentCombinations() {
+    final String OLD_SYMBOL = "_";
+    final String NEW_SYMBOL = " ";
+    for (final Player player : players) {
+      if (!player.didFold()) {
+        final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
+        System.out.println(player.getNickname() + " has got " + handDescription(player.getHand()) +
+            " (" + combination.toLowerCase() + ")");
+      }
+    }
+  }
+  private String handDescription(final List<Card> cards) {
+    return cards.get(0).toString() + " and " + cards.get(1);
+  }
+  private void decideWinner() {
+   final int[] handStrengthArr = Arrays.asList(players)
+   .stream()
+   .filter(player -> !player.didFold())
+   .mapToInt(player -> player.getCombination().ordinal())
+   .sorted()
+   .toArray();
+   final int strongestHand = handStrengthArr[handStrengthArr.length - 1];
+   for (final Player player: players) {
+     if (!player.didFold() && player.getCombination().ordinal() == strongestHand) System.out.println(player.getNickname() + " won");
+   }
   }
 }
