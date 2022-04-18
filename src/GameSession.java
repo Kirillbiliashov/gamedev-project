@@ -21,8 +21,8 @@ public final class GameSession {
       final boolean isUser = i == 0;
       final Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
       player.dealHand(cards);
-      final Card[] hand = player.getHand();
-      if (isUser) System.out.println(nickname + ", your hand is " + hand[0].toString() + " and " + hand[1].toString());
+      final List<Card> hand = player.getHand();
+      if (isUser) System.out.println(nickname + ", your hand is " + hand.get(0).toString() + " and " + hand.get(1).toString());
       players[i] = player;
     }
     assignPositions();
@@ -31,13 +31,15 @@ public final class GameSession {
     Helpers.transport(cards, tableCards, 3);
     System.out.print("Flop: ");
     presentTableCards();
+    printCombination();
     Helpers.transport(cards, tableCards, 1);
     System.out.print("Turn: ");
     presentTableCards();
+    printCombination();
     System.out.print("River: ");
     Helpers.transport(cards, tableCards, 1);
     presentTableCards();
-
+    printCombination();
 
   }
 
@@ -149,5 +151,29 @@ public final class GameSession {
       System.out.print(tableCards.get(i).toString() + (i == size - 1 ? "." : ", "));
     }
     System.out.println();
+  }
+  private void printCombination() {
+    Player user = players[0];
+    List<Card> userHand = new ArrayList<>(user.getHand());
+    userHand.addAll(tableCards);
+    if (Cards.isRoyalFlush(userHand)) {
+      System.out.println("Your combination: royal flush");
+    } else if (Cards.isStraightFlush(userHand)) {
+      System.out.println("Your combination: straight flush");
+    } else if (Cards.isFourOfKind(userHand)) {
+      System.out.println("Your combination: four of a kind");
+    } else if (Cards.isFullHouse(userHand)) {
+      System.out.println("Your combination: full house");
+    } else if (Cards.isFlush(userHand)) {
+      System.out.println("Your combination: flush");
+    } else if (Cards.isStraight(userHand)) {
+      System.out.println("Your combination: straight");
+    } else if (Cards.isThreeOfKind(userHand)) {
+      System.out.println("Your combination: three of a kind");
+    } else if (Cards.isTwoPairs(userHand)) {
+      System.out.println("Your combination: two pairs");
+    } else if (Cards.isPair(userHand)) {
+      System.out.println("Your combination: pair");
+    } else System.out.println("Your combination: high card");
   }
 }
