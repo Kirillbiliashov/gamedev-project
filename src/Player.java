@@ -7,7 +7,7 @@ public final class Player {
   private boolean isBB = false;
   private boolean isSB = false;
   private boolean folded = false;
-
+  private Combination combination = Combination.HIGH_CARD;
   public Player(final int balance, final String nickname) {
     this.balance = balance;
     this.nickname = nickname;
@@ -29,6 +29,10 @@ public final class Player {
     return this.hand;
   }
 
+  public Combination getCombination() {
+    return this.combination;
+  }
+
   public void setBB() {
     this.isBB = true;
     this.isSB = false;
@@ -37,6 +41,10 @@ public final class Player {
   public void setSB() {
     this.isSB = true;
     this.isBB = false;
+  }
+
+  public void setCombination(Combination combination) {
+    this.combination = combination;
   }
 
   public void changeBalance(final int delta) {
