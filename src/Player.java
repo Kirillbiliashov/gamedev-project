@@ -3,10 +3,11 @@ import java.util.*;
 public final class Player {
   private final String nickname;
   private int balance;
-  private Card[] hand = new Card[2];
+  private List<Card> hand;
   private boolean isBB = false;
   private boolean isSB = false;
   private boolean folded = false;
+
   public Player(final int balance, final String nickname) {
     this.balance = balance;
     this.nickname = nickname;
@@ -24,7 +25,7 @@ public final class Player {
     return this.nickname;
   }
 
-  public Card[] getHand() {
+  public List<Card> getHand() {
     return this.hand;
   }
 
@@ -41,9 +42,11 @@ public final class Player {
   public void changeBalance(final int delta) {
     balance += delta;
   }
+
   public void setFolded() {
     this.folded = true;
   }
+
   public boolean didFold() {
     return this.folded;
   }
