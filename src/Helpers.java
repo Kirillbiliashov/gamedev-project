@@ -10,13 +10,14 @@ public final class Helpers {
     }
   }
   public static boolean hasEqualNumbers(final int[] nums, final int count) {
+    int idx = 0;
     int equalNums = 1;
-    int equalNum = nums[0];
-    for (int i = 1; i < nums.length; i++) {
-      if (nums[i] != equalNum) equalNum = nums[i];
-      else equalNums++;
+    while (equalNums < count) {
+      if (++idx == nums.length) return false; 
+      if (nums[idx] == nums[idx - 1]) equalNums++;
+      else equalNums = 1;
     }
-    return equalNums == count;
+    return true;
   }
 
 }
