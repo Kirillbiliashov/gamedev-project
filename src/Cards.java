@@ -30,11 +30,11 @@ public final class Cards {
   }
 
   public static boolean isRoyalFlush(final List<Card> cards) {
-    final int MAX_CARD_VALUE = 13;
+    final int maxValue = Rank.ACE.ordinal();
     final int lastIdx = cards.size() - 1;
     if (isStraight(cards) && isFlush(cards)) {
-      final int cardValue = cards.get(lastIdx).getRank().getValue();
-      return cardValue == MAX_CARD_VALUE;
+      final int cardValue = cards.get(lastIdx).getRank().ordinal();
+      return cardValue == maxValue;
     }
     return false;
   }
@@ -113,7 +113,7 @@ public final class Cards {
     String className = enumClass.getName();
     return cards
         .stream()
-        .mapToInt(card -> className.equals(rankClassName) ? card.getRank().getValue() : card.getSuit().getValue())
+        .mapToInt(card -> className.equals(rankClassName) ? card.getRank().ordinal() : card.getSuit().ordinal())
         .sorted()
         .toArray();
   }
