@@ -15,7 +15,6 @@ public final class GameSession {
   private int bbIdx;
   private int currRaiseSum;
   private int playersPlayed;
-  private int prevRoundRaiseSum;
   private boolean isPreflop = true;
   private int handsPlayed;
   private final String[] STAGES = { "Flop", "Turn", "River" };
@@ -51,17 +50,19 @@ public final class GameSession {
     int currIdx = bbIdx == PLAYERS_SEATED - 1 ? 0 : bbIdx + 1;
     while (playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
+      final boolean isBB = player.isBB();
       if (!player.didFold()) {
-        if (player.getBalance() == 0) System.out.println("Player " + player.getNickname() + " went al in");
+        if (player.getBalance() == 0) System.out.println("Player " + player.getNickname() + " went all in");
         else {
           final int handStrength = player.getCombination().ordinal();
           final int randomDecisionNum = Helpers.randomInRange(handStrength, 10 + handStrength);
           if (currIdx == 0) makeUserTurn(player);
-          else if (isPreflop ? currIdx == bbIdx && currRaiseSum == 0 : currRaiseSum == prevRoundRaiseSum) {
+          else if (isPreflop ? isBB && currRaiseSum == 0 : currRaiseSum == 0) {
             if (randomDecisionNum >= MIN_RAISE_NUMBER) {
               currRaiseSum = player.raise(currRaiseSum);
               handleRaiseAction();
-            } else System.out.println("Player " + player.getNickname() + " (big blind) checked, balance: " + player.getBalance());
+            } else System.out.println("Player " + player.getNickname() + (isBB ? " (big blind) " : " ")
+                  + "checked, balance: " + player.getBalance());
           } else {
             if (randomDecisionNum < MIN_CALL_NUMBER) player.fold();
             else if (randomDecisionNum < MIN_RAISE_NUMBER || player.getBalance() < currRaiseSum) pot += player.call(currRaiseSum);
@@ -71,19 +72,21 @@ public final class GameSession {
             }
           }
         }
-      } else System.out.println("Player " + player.getNickname() + " folded");
-      if (++currIdx == PLAYERS_SEATED) currIdx = 0;
+      } else System.out.println("Player " + player.getNickname() + (player.getBalance() == 0 ? " sit out" : " folded"));
+      if (++currIdx == PLAYERS_SEATED)
+        currIdx = 0;
       playersPlayed++;
     }
     playersPlayed = 0;
-    if (isPreflop) isPreflop = false;
-    prevRoundRaiseSum = currRaiseSum;
+    if (isPreflop)
+      isPreflop = false;
+      currRaiseSum = 0;
   }
 
   private void makeUserTurn(final Player player) {
     final int balance = player.getBalance();
     final Scanner input = new Scanner(System.in);
-    final boolean userCanCheck = isPreflop ? bbIdx == 0 && currRaiseSum == 0 : currRaiseSum == prevRoundRaiseSum;
+    final boolean userCanCheck = isPreflop ? bbIdx == 0 && currRaiseSum == 0 : currRaiseSum == 0;
     final boolean userCanRaise = balance > currRaiseSum;
     char action;
     try {
@@ -224,9 +227,8 @@ private void presentTableCards() {
     }
     pot = 0;
     isPreflop = true;
-    prevRoundRaiseSum = 0;
     currRaiseSum = 0;
-    for (final Player player : players) player.setFolded(false);
+    for (final Player player : players) player.setFolded(player.getBalance() == 0);
     newRound();
   }
 

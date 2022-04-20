@@ -35,6 +35,9 @@ public final class Player {
   public Combination getCombination() {
     return this.combination;
   }
+  public boolean isBB() {
+    return this.isBB;
+  }
 
   public void setBB() {
     this.isBB = true;
@@ -64,15 +67,17 @@ public final class Player {
 
   public int raise(final int currRaiseSum) {
     final int MAX_BB_SIZE_RAISE = 10;
-    final int randomRaiseSum = Helpers.randomInRange(GameSession.SB_SIZE, GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
+    final int MIN_BB_SIZE_RAISE = 2;
+    final int randomRaiseSum = Helpers.randomInRange(GameSession.BB_SIZE * MIN_BB_SIZE_RAISE, GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
     final int raiseSum = randomRaiseSum - randomRaiseSum % GameSession.SB_SIZE + currRaiseSum;
     return raiseFixedSum(raiseSum);
   }
 
   public int raiseFixedSum(final int raiseSum) {
-    balance -= raiseSum;
+    final boolean isAllIn = raiseSum >= balance;
+    balance -= Math.min(balance, raiseSum);
     prevBetSum = raiseSum;
-    System.out.println(this.nickname + " raised " + raiseSum + ", balance: " + this.balance);
+    System.out.println(this.nickname + " raised " + (isAllIn ? " all in" : "") + ", balance: " + this.balance);
     return raiseSum;
   }
 
@@ -92,6 +97,8 @@ public final class Player {
 
   public void resetPrevRoundData() {
     this.prevBetSum = 0;
+    this.isBB = false;
+    this.isSB = false;
   }
 }
 
