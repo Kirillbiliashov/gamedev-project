@@ -85,9 +85,14 @@ public final class GameSession {
     final Scanner input = new Scanner(System.in);
     final boolean userCanCheck = isPreflop ? bbIdx == 0 && currRaiseSum == 0 : currRaiseSum == prevRoundRaiseSum;
     final boolean userCanRaise = balance > currRaiseSum;
+    char action;
+    try {
     System.out.print("Your balance is " + balance + ". Enter " + (userCanRaise ? "R to raise, " : "") + "C to "
         + (userCanCheck ? "check: " : "call, F to fold: "));
-    final char action = input.nextLine().charAt(0);
+    action = input.nextLine().charAt(0);
+  } catch (Exception e) {
+    action = 'C';
+  }
     if (userCanCheck && action == 'C') System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
     else {
       if (action == 'F') player.fold();
@@ -96,10 +101,10 @@ public final class GameSession {
         if (!userCanRaise) pot += player.call(currRaiseSum);
         else {
           int raiseSum = 0;
-      while (raiseSum <= BB_SIZE || raiseSum < currRaiseSum) {
-        System.out.print("Enter raise sum: ");
-        raiseSum = input.nextInt();
-      }
+          while (raiseSum <= BB_SIZE || raiseSum < currRaiseSum) {
+            System.out.print("Enter raise sum: ");
+            raiseSum = input.nextInt();
+          }
       raiseSum = Math.min(player.getBalance(), raiseSum);
       currRaiseSum = player.raiseFixedSum(raiseSum);
       handleRaiseAction();
@@ -206,8 +211,13 @@ private void presentTableCards() {
   private void endRound() {
     final Scanner input = new Scanner(System.in);
     System.out.println("Hands played: " + handsPlayed);
-    System.out.print("Enter Q if you want to quit the game or any other symbol otherwise: ");
-    char symbol = input.nextLine().charAt(0);
+    char symbol;
+    try {
+      System.out.print("Enter Q if you want to quit the game or any other symbol otherwise: ");
+      symbol = input.nextLine().charAt(0);
+    } catch (Exception e) {
+      symbol = ' ';
+    }
     if (symbol == 'Q') {
       System.out.println("Thank you for playing");
       return;
@@ -216,7 +226,7 @@ private void presentTableCards() {
     isPreflop = true;
     prevRoundRaiseSum = 0;
     currRaiseSum = 0;
-    for (final Player player: players) player.setFolded(false);
+    for (final Player player : players) player.setFolded(false);
     newRound();
   }
 
