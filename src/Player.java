@@ -1,5 +1,7 @@
 import java.util.*;
 
+import enums.Combination;
+
 public final class Player {
   private final String nickname;
   private int balance;

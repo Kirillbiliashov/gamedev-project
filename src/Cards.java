@@ -1,5 +1,8 @@
 import java.util.*;
 
+import enums.Rank;
+import enums.Suit;
+
 public final class Cards {
 
   public static List<Card> getAll() {

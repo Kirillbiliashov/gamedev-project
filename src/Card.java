@@ -1,3 +1,6 @@
+import enums.Rank;
+import enums.Suit;
+
 public final class Card {
   private final Suit suit;
   private final Rank rank;

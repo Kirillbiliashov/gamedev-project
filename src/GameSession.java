@@ -1,5 +1,7 @@
 import java.util.*;
 
+import enums.Combination;
+
 public final class GameSession {
   private static final int PLAYERS_SEATED = 6;
   public static final int MIN_BALANCE = 5000;
