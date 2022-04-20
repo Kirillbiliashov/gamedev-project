@@ -3,6 +3,7 @@ import java.util.*;
 public final class Player {
   private final String nickname;
   private int balance;
+  private int prevBetSum;
   private List<Card> hand;
   private boolean isBB = false;
   private boolean isSB = false;
@@ -58,4 +59,37 @@ public final class Player {
   public boolean didFold() {
     return this.folded;
   }
+
+  public int raise(final int currRaiseSum) {
+    final int MAX_BB_SIZE_RAISE = 10;
+    final int randomRaiseSum = Helpers.randomInRange(GameSession.SB_SIZE, GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
+    final int raiseSum = randomRaiseSum - randomRaiseSum % GameSession.SB_SIZE + currRaiseSum;
+    return raiseFixedSum(raiseSum);
+  }
+
+  public int raiseFixedSum(final int raiseSum) {
+    balance -= raiseSum;
+    prevBetSum = raiseSum;
+    System.out.println(this.nickname + " raised " + raiseSum + ", balance: " + this.balance);
+    return raiseSum;
+  }
+
+  public int call(final int currRaiseSum) {
+    int callSum = currRaiseSum > 0 ? (currRaiseSum - prevBetSum) : GameSession.BB_SIZE;
+    callSum = Math.min(this.balance, callSum);
+    balance -= callSum;
+    prevBetSum = callSum;
+    System.out.println("Player " + this.nickname + " called " + callSum + ", balance: " + this.balance);
+    return callSum;
+  }
+
+  public void fold() {
+    this.folded = true;
+    System.out.println("Player " + this.nickname + " folded, balance: " + this.balance);
+  }
+
+  public void resetPrevRoundData() {
+    this.prevBetSum = 0;
+  }
 }
+

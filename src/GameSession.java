@@ -4,8 +4,8 @@ public final class GameSession {
   private static final int PLAYERS_SEATED = 6;
   public static final int MIN_BALANCE = 5000;
   public static final int MAX_BALANCE = 25000;
-  private static final int BB_SIZE = 100;
-  private static final int SB_SIZE = 50;
+  public static final int BB_SIZE = 100;
+  public static final int SB_SIZE = 50;
   private final List<Card> cards = Cards.getAll();
   private final List<Card> tableCards = new ArrayList<>();
   private final Player[] players = new Player[PLAYERS_SEATED];
@@ -30,14 +30,15 @@ public final class GameSession {
     }
     assignPositions();
     performBettingRound();
-    System.out.println("Pot is " + pot);
     for (int i = 0; i < rounds.length; i++) {
+      System.out.println("Pot is " + pot);
       Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
       System.out.print(rounds[i] + ": ");
       presentTableCards();
       printCombination();
       performBettingRound();
+      resetPrevRoundData();
     }
     presentCombinations();
     decideWinner();
@@ -58,23 +59,29 @@ public final class GameSession {
   }
 
   private void performBettingRound() {
-    final int MIN_RAISE_NUMBER = 8;
-    final int MIN_CALL_NUMBER = 4;
+    final int MIN_RAISE_NUMBER = isPreflop ? 8 : 13;
+    final int MIN_CALL_NUMBER = isPreflop ? 4 : 7;
     int currIdx = bbIdx == PLAYERS_SEATED - 1 ? 0 : bbIdx + 1;
     while (playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
       if (!player.didFold()) {
         if (player.getBalance() == 0) System.out.println("Player " + player.getNickname() + " went al in");
         else {
-          final int randomDecisionNum = Helpers.randomInRange(0, 10);
+          final int handStrength = player.getCombination().ordinal();
+          final int randomDecisionNum = Helpers.randomInRange(handStrength, 10 + handStrength);
           if (currIdx == 0) makeUserTurn(player);
           else if (isPreflop ? currIdx == bbIdx && currRaiseSum == 0 : currRaiseSum == prevRoundRaiseSum) {
-            if (randomDecisionNum >= MIN_RAISE_NUMBER) raise(player);
-            else System.out.println("Player " + player.getNickname() + " (big blind) checked, balance: " + player.getBalance());
+            if (randomDecisionNum >= MIN_RAISE_NUMBER) {
+              currRaiseSum = player.raise(currRaiseSum);
+              handleRaiseAction();
+            } else System.out.println("Player " + player.getNickname() + " (big blind) checked, balance: " + player.getBalance());
           } else {
-            if (randomDecisionNum < MIN_CALL_NUMBER) fold(player);
-            else if (randomDecisionNum < MIN_RAISE_NUMBER) call(player);
-            else raise(player);
+            if (randomDecisionNum < MIN_CALL_NUMBER) player.fold();
+            else if (randomDecisionNum < MIN_RAISE_NUMBER || player.getBalance() < currRaiseSum) pot += player.call(currRaiseSum);
+            else {
+              currRaiseSum = player.raise(currRaiseSum);
+              handleRaiseAction();
+            }
           }
         }
       } else System.out.println("Player " + player.getNickname() + " folded");
@@ -84,42 +91,6 @@ public final class GameSession {
     playersPlayed = 0;
     if (isPreflop) isPreflop = false;
     prevRoundRaiseSum = currRaiseSum;
-  }
-
-  private void raise(final Player player, final int raiseSum) {
-    currRaiseSum = raiseSum;
-    pot += raiseSum;
-    player.changeBalance(-raiseSum);
-    System.out.println(player.getNickname() + " raised " + raiseSum + ", balance: " + player.getBalance());
-    playersPlayed = 0;
-  }
-
-  private void raise(final Player player) {
-    final int MAX_BB_SIZE_RAISE = 10;
-    final int balance = player.getBalance();
-    if (balance < currRaiseSum) call(player, balance);
-    else {
-      final int randomRaiseSum = Helpers.randomInRange(SB_SIZE, BB_SIZE * MAX_BB_SIZE_RAISE);
-      final int roundedRaiseSum = randomRaiseSum - randomRaiseSum % SB_SIZE + currRaiseSum;
-      this.raise(player, roundedRaiseSum);
-    }
-  }
-
-  private void call(final Player player) {
-    int callSum = currRaiseSum > 0 ? currRaiseSum : BB_SIZE;
-    callSum = Math.min(player.getBalance(), callSum);
-    call(player, callSum);
-  }
-
-  private void call(final Player player, final int callSum) {
-    pot += callSum;
-    player.changeBalance(-callSum);
-    System.out.println("Player " + player.getNickname() + " called " + callSum + ", balance: " + player.getBalance());
-  }
-
-  private void fold(final Player player) {
-    player.setFolded();
-    System.out.println("Player " + player.getNickname() + " folded, balance: " + player.getBalance());
   }
 
   private void makeUserTurn(final Player player) {
@@ -132,31 +103,36 @@ public final class GameSession {
     final char action = input.nextLine().charAt(0);
     if (userCanCheck && action == 'C') System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
     else {
-      if (action == 'F') fold(player);
-      else if (action == 'C') call(player);
+      if (action == 'F') player.fold();
+      else if (action == 'C') pot += player.call(currRaiseSum);
       else if (action == 'R') {
-        if (!userCanRaise) call(player, balance);
+        if (!userCanRaise) pot += player.call(currRaiseSum);
         else {
           int raiseSum = 0;
-          while (raiseSum <= BB_SIZE || raiseSum < currRaiseSum) {
-            System.out.print("Enter raise sum: ");
-            raiseSum = input.nextInt();
-            input.nextLine();
-          }
-          raiseSum = Math.min(balance, raiseSum);
-          raise(player, raiseSum);
-        }
+      while (raiseSum <= BB_SIZE || raiseSum < currRaiseSum) {
+        System.out.print("Enter raise sum: ");
+        raiseSum = input.nextInt();
       }
+      raiseSum = Math.min(player.getBalance(), raiseSum);
+      currRaiseSum = player.raiseFixedSum(raiseSum);
+      handleRaiseAction();
     }
   }
+}
+}
 
-  private void presentTableCards() {
-    final int size = tableCards.size();
-    for (int i = 0; i < size; i++) {
-      System.out.print(tableCards.get(i).toString() + (i == size - 1 ? "." : ", "));
-    }
-    System.out.println();
+ private void handleRaiseAction() {
+  pot += currRaiseSum;
+  playersPlayed = 0;
+}
+
+private void presentTableCards() {
+  final int size = tableCards.size();
+  for (int i = 0; i < size; i++) {
+    System.out.print(tableCards.get(i).toString() + (i == size - 1 ? "." : ", "));
   }
+  System.out.println();
+}
 
   private void assignCombinations() {
     for (final Player player : players) {
@@ -201,19 +177,35 @@ public final class GameSession {
       }
     }
   }
+
   private String handDescription(final List<Card> cards) {
     return cards.get(0).toString() + " and " + cards.get(1);
   }
+
   private void decideWinner() {
-   final int[] handStrengthArr = Arrays.asList(players)
-   .stream()
-   .filter(player -> !player.didFold())
-   .mapToInt(player -> player.getCombination().ordinal())
-   .sorted()
-   .toArray();
-   final int strongestHand = handStrengthArr[handStrengthArr.length - 1];
-   for (final Player player: players) {
-     if (!player.didFold() && player.getCombination().ordinal() == strongestHand) System.out.println(player.getNickname() + " won");
-   }
+    final int strongestHand = Arrays.asList(players)
+        .stream()
+        .filter(player -> !player.didFold())
+        .mapToInt(player -> player.getCombination().ordinal())
+        .sorted()
+        .reduce(0, Math::max);
+    final List<Player> winnersList = Arrays.asList(players)
+        .stream()
+        .filter(player -> !player.didFold() && player.getCombination().ordinal() == strongestHand)
+        .toList();
+    final int winnersCount = winnersList.size();
+    final int winSum = pot / winnersCount;
+    for (final Player winner : winnersList) {
+      winner.changeBalance(winSum);
+      System.out.println(winner.getNickname() + " won " + winSum + ", new balance: " + winner.getBalance());
+    }
+    pot = 0;
+  }
+
+  private void resetPrevRoundData() {
+    for (final Player player : players)
+      player.resetPrevRoundData();
   }
 }
+
+
