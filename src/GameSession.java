@@ -6,8 +6,8 @@ public final class GameSession {
   public static final int MAX_BALANCE = 25000;
   public static final int BB_SIZE = 100;
   public static final int SB_SIZE = 50;
-  private final List<Card> cards = Cards.getAll();
-  private final List<Card> tableCards = new ArrayList<>();
+  private  List<Card> cards;
+  private  List<Card> tableCards;
   private final Player[] players = new Player[PLAYERS_SEATED];
   private int pot;
   private int bbIdx;
@@ -15,46 +15,31 @@ public final class GameSession {
   private int playersPlayed;
   private int prevRoundRaiseSum;
   private boolean isPreflop = true;
-  private String[] rounds = { "Flop", "River", "Turn" };
+  private int handsPlayed;
+  private final String[] STAGES = { "Flop", "Turn", "River" };
 
   public void start(final int yourBalance, final String nickname) {
-    Cards.shuffle(cards);
-    for (int i = 0; i < PLAYERS_SEATED; i++) {
-      final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE);
-      final boolean isUser = i == 0;
-      final Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
-      player.dealHand(cards);
-      final List<Card> hand = player.getHand();
-      if (isUser) System.out.println(nickname + ", your hand is " + handDescription(hand));
-      players[i] = player;
+    if (handsPlayed == 0) {
+      for (int i = 0; i < PLAYERS_SEATED; i++) {
+        final boolean isUser = i == 0;
+        final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE);
+        final Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
+        players[i] = player;
+      }
     }
-    assignPositions();
-    performBettingRound();
-    for (int i = 0; i < rounds.length; i++) {
-      System.out.println("Pot is " + pot);
-      Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
-      assignCombinations();
-      System.out.print(rounds[i] + ": ");
-      presentTableCards();
-      printCombination();
-      performBettingRound();
-      resetPrevRoundData();
-    }
-    presentCombinations();
-    decideWinner();
+    newRound();
   }
 
   private void assignPositions() {
-    final int randomIdx = Helpers.randomInRange(0, PLAYERS_SEATED - 1);
-    final Player sbPlayer = players[randomIdx];
+    final int sbIdx = handsPlayed == 1 ? Helpers.randomInRange(0, PLAYERS_SEATED - 1) : bbIdx;
+    bbIdx = sbIdx == PLAYERS_SEATED - 1 ? 0 : sbIdx + 1;
+    final Player sbPlayer = players[sbIdx];
     sbPlayer.setSB();
     sbPlayer.changeBalance(-SB_SIZE);
-    pot += SB_SIZE;
-    players[randomIdx].setSB();
-    bbIdx = randomIdx == PLAYERS_SEATED - 1 ? 0 : randomIdx + 1;
     final Player bbPlayer = players[bbIdx];
     bbPlayer.setBB();
     bbPlayer.changeBalance(-BB_SIZE);
+    pot += SB_SIZE;
     pot += BB_SIZE;
   }
 
@@ -199,12 +184,65 @@ private void presentTableCards() {
       winner.changeBalance(winSum);
       System.out.println(winner.getNickname() + " won " + winSum + ", new balance: " + winner.getBalance());
     }
-    pot = 0;
   }
 
   private void resetPrevRoundData() {
     for (final Player player : players)
       player.resetPrevRoundData();
+  }
+  private void dealHands() {
+        for (int i = 0; i < PLAYERS_SEATED; i++) {
+      boolean isUser = i == 0;
+      players[i].dealHand(cards);
+      if (isUser) {
+        final List<Card> hand = players[i].getHand();
+        System.out.println(players[i].getNickname() + ", your hand is " + handDescription(hand));
+      }
+    }
+  }
+ 
+  private void endRound() {
+    final Scanner input = new Scanner(System.in);
+    System.out.println("Hands played: " + handsPlayed);
+    System.out.print("Enter Q if you want to quit the game or any other symbol otherwise: ");
+    char symbol = input.nextLine().charAt(0);
+    if (symbol == 'Q') {
+      System.out.println("Thank you for playing");
+      return;
+    }
+    pot = 0;
+    isPreflop = true;
+    prevRoundRaiseSum = 0;
+    currRaiseSum = 0;
+    for (final Player player: players) player.setFolded(false);
+    newRound();
+  }
+
+  private void newRound() {
+    if (players[0].getBalance() == 0) {
+      System.out.println("Your balance is 0. Game Over!");
+      return;
+    }
+    handsPlayed++;
+    cards = Cards.getAll();
+    tableCards = new ArrayList<>();
+    Cards.shuffle(cards);
+    dealHands();
+    assignPositions();
+    performBettingRound();
+    for (int i = 0; i < STAGES.length; i++) {
+      System.out.println("Pot is " + pot);
+      Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
+      assignCombinations();
+      System.out.print(STAGES[i] + ": ");
+      presentTableCards();
+      printCombination();
+      performBettingRound();
+      resetPrevRoundData();
+    }
+    presentCombinations();
+    decideWinner();
+    endRound();
   }
 }
 

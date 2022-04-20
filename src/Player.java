@@ -52,8 +52,8 @@ public final class Player {
     balance += delta;
   }
 
-  public void setFolded() {
-    this.folded = true;
+  public void setFolded(final boolean folded) {
+    this.folded = folded;
   }
 
   public boolean didFold() {
