@@ -8,9 +8,9 @@ public final class GameSession {
   public static final int MAX_BALANCE = 25000;
   public static final int BB_SIZE = 100;
   public static final int SB_SIZE = 50;
-  private  List<Card> cards;
-  private  List<Card> tableCards;
-  private final Player[] players = new Player[PLAYERS_SEATED];
+  private List<Card> cards;
+  private static List<Card> tableCards;
+  private final static Player[] players = new Player[PLAYERS_SEATED];
   private int pot;
   private int bbIdx;
   private int currRaiseSum;
@@ -29,6 +29,35 @@ public final class GameSession {
       }
     }
     newRound();
+  }
+
+  private class InfoLogger {
+    public static void presentTableCards() {
+      final int size = tableCards.size();
+      for (int i = 0; i < size; i++) {
+        System.out.print(tableCards.get(i).toString() + (i == size - 1 ? "." : ", "));
+      }
+      System.out.println();
+    }
+
+    public static void printCombination() {
+      final Player user = players[0];
+      final Combination combination = user.getCombination();
+      System.out.println("Your combination is " + combination.toString());
+    }
+
+    public static void presentCombinations() {
+      final String OLD_SYMBOL = "_";
+      final String NEW_SYMBOL = " ";
+      for (final Player player : players) {
+        if (!player.didFold()) {
+          final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
+          System.out.println(player.getNickname() + " has got " + handDescription(player.getHand()) +
+              " (" + combination.toLowerCase() + ")");
+        }
+      }
+    }
+
   }
 
   private void assignPositions() {
@@ -73,14 +102,12 @@ public final class GameSession {
           }
         }
       } else System.out.println("Player " + player.getNickname() + (player.getBalance() == 0 ? " sit out" : " folded"));
-      if (++currIdx == PLAYERS_SEATED)
-        currIdx = 0;
+      if (++currIdx == PLAYERS_SEATED) currIdx = 0;
       playersPlayed++;
     }
     playersPlayed = 0;
-    if (isPreflop)
-      isPreflop = false;
-      currRaiseSum = 0;
+    if (isPreflop) isPreflop = false;
+    currRaiseSum = 0;
   }
 
   private void makeUserTurn(final Player player) {
@@ -90,13 +117,14 @@ public final class GameSession {
     final boolean userCanRaise = balance > currRaiseSum;
     char action;
     try {
-    System.out.print("Your balance is " + balance + ". Enter " + (userCanRaise ? "R to raise, " : "") + "C to "
-        + (userCanCheck ? "check: " : "call, F to fold: "));
-    action = input.nextLine().charAt(0);
-  } catch (Exception e) {
-    action = 'C';
-  }
-    if (userCanCheck && action == 'C') System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
+      System.out.print("Your balance is " + balance + ". Enter " + (userCanRaise ? "R to raise, " : "") + "C to "
+          + (userCanCheck ? "check: " : "call, F to fold: "));
+      action = input.nextLine().charAt(0);
+    } catch (Exception e) {
+      action = 'C';
+    }
+    if (userCanCheck && action == 'C')
+      System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
     else {
       if (action == 'F') player.fold();
       else if (action == 'C') pot += player.call(currRaiseSum);
@@ -108,26 +136,18 @@ public final class GameSession {
             System.out.print("Enter raise sum: ");
             raiseSum = input.nextInt();
           }
-      raiseSum = Math.min(player.getBalance(), raiseSum);
-      currRaiseSum = player.raiseFixedSum(raiseSum);
-      handleRaiseAction();
+          raiseSum = Math.min(player.getBalance(), raiseSum);
+          currRaiseSum = player.raiseFixedSum(raiseSum);
+          handleRaiseAction();
+        }
+      }
     }
   }
-}
-}
 
- private void handleRaiseAction() {
-  pot += currRaiseSum;
-  playersPlayed = 0;
-}
-
-private void presentTableCards() {
-  final int size = tableCards.size();
-  for (int i = 0; i < size; i++) {
-    System.out.print(tableCards.get(i).toString() + (i == size - 1 ? "." : ", "));
+  private void handleRaiseAction() {
+    pot += currRaiseSum;
+    playersPlayed = 0;
   }
-  System.out.println();
-}
 
   private void assignCombinations() {
     for (final Player player : players) {
@@ -155,25 +175,7 @@ private void presentTableCards() {
     }
   }
 
-  private void printCombination() {
-    final Player user = players[0];
-    final Combination combination = user.getCombination();
-    System.out.println("Your combination is " + combination.toString());
-  }
-
-  private void presentCombinations() {
-    final String OLD_SYMBOL = "_";
-    final String NEW_SYMBOL = " ";
-    for (final Player player : players) {
-      if (!player.didFold()) {
-        final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
-        System.out.println(player.getNickname() + " has got " + handDescription(player.getHand()) +
-            " (" + combination.toLowerCase() + ")");
-      }
-    }
-  }
-
-  private String handDescription(final List<Card> cards) {
+  private static String handDescription(final List<Card> cards) {
     return cards.get(0).toString() + " and " + cards.get(1);
   }
 
@@ -197,11 +199,11 @@ private void presentTableCards() {
   }
 
   private void resetPrevRoundData() {
-    for (final Player player : players)
-      player.resetPrevRoundData();
+    for (final Player player : players) player.resetPrevRoundData();
   }
+
   private void dealHands() {
-        for (int i = 0; i < PLAYERS_SEATED; i++) {
+    for (int i = 0; i < PLAYERS_SEATED; i++) {
       boolean isUser = i == 0;
       players[i].dealHand(cards);
       if (isUser) {
@@ -210,7 +212,7 @@ private void presentTableCards() {
       }
     }
   }
- 
+
   private void endRound() {
     final Scanner input = new Scanner(System.in);
     System.out.println("Hands played: " + handsPlayed);
@@ -249,15 +251,13 @@ private void presentTableCards() {
       Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
       System.out.print(STAGES[i] + ": ");
-      presentTableCards();
-      printCombination();
+      InfoLogger.presentTableCards();
+      InfoLogger.printCombination();
       performBettingRound();
       resetPrevRoundData();
     }
-    presentCombinations();
+    InfoLogger.presentCombinations();
     decideWinner();
     endRound();
   }
 }
-
-
