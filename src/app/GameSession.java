@@ -1,7 +1,9 @@
+package src.app;
+
 import java.util.*;
 import java.util.stream.Stream;
+import src.enums.*;
 import java.util.function.Supplier;
-import enums.Combination;
 
 public final class GameSession {
   private static final int PLAYERS_SEATED = 6;
@@ -157,24 +159,12 @@ public final class GameSession {
     for (final Player player : players) {
       final List<Card> playerHand = new ArrayList<>(player.getHand());
       playerHand.addAll(tableCards);
-      if (Cards.isRoyalFlush(playerHand)) {
-        player.setCombination(Combination.ROYAL_FLUSH);
-      } else if (Cards.isStraightFlush(playerHand)) {
-        player.setCombination(Combination.STRAIGHT_FLUSH);
-      } else if (Cards.isFourOfKind(playerHand)) {
-        player.setCombination(Combination.FOUR_OF_A_KIND);
-      } else if (Cards.isFullHouse(playerHand)) {
-        player.setCombination(Combination.FULL_HOUSE);
-      } else if (Cards.isFlush(playerHand)) {
-        player.setCombination(Combination.FLUSH);
-      } else if (Cards.isStraight(playerHand)) {
-        player.setCombination(Combination.STRAIGHT);
-      } else if (Cards.isThreeOfKind(playerHand)) {
-        player.setCombination(Combination.THREE_OF_A_KIND);
-      } else if (Cards.isTwoPairs(playerHand)) {
-        player.setCombination(Combination.TWO_PAIRS);
-      } else if (Cards.isPair(playerHand)) {
-        player.setCombination(Combination.PAIR);
+      Combination[] combinations = Combination.values();
+      for (final Combination combination : combinations) {
+        if (combination.check(playerHand)) {
+          player.setCombination(combination);
+          return;
+        }
       }
     }
   }
@@ -190,7 +180,7 @@ public final class GameSession {
         .filter(player -> !player.didFold());
     final int strongestHand = activeUnresolvedPlayersStream.get()
         .mapToInt(player -> player.getCombination().ordinal())
-        .reduce(0, Math::max);
+        .reduce(0, Math::min);
     final List<Player> winners = activeUnresolvedPlayersStream.get()
         .filter(player -> player.getCombination().ordinal() == strongestHand)
         .toList();
@@ -198,7 +188,7 @@ public final class GameSession {
         .filter(winner -> winner.getBalance() == 0)
         .sorted((w1, w2) -> w1.getMoneyInPot() - w2.getMoneyInPot())
         .toList();
-    if (allInWinners.size() > 0) {
+    if (!allInWinners.isEmpty()) {
       final Player allInWinner = allInWinners.get(0);
       final int winnerMoney = allInWinner.getMoneyInPot();
       final List<Player> foldedPlayers = unresolvedPlayersStream.get()

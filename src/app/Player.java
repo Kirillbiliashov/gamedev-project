@@ -1,6 +1,7 @@
-import java.util.*;
+package src.app;
 
-import enums.Combination;
+import java.util.*;
+import src.enums.Combination;
 
 public final class Player {
   private final String nickname;
@@ -75,7 +76,7 @@ public final class Player {
     moneyInPot[roundIdx] += sum;
   }
 
-  public void setCombination(Combination combination) {
+  public void setCombination(final Combination combination) {
     this.combination = combination;
   }
 
