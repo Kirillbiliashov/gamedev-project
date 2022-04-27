@@ -5,14 +5,19 @@ import enums.Combination;
 public final class Player {
   private final String nickname;
   private int balance;
-  private int prevBetSum;
+  private int roundIdx;
+  private int initialBalance;
   private List<Card> hand;
   private boolean isBB = false;
   private boolean isSB = false;
   private boolean folded = false;
+  private boolean isResolved = false;
+  private final int[] moneyInPot = new int[4];
   private Combination combination = Combination.HIGH_CARD;
+
   public Player(final int balance, final String nickname) {
     this.balance = balance;
+    this.initialBalance = balance;
     this.nickname = nickname;
   }
 
@@ -22,6 +27,18 @@ public final class Player {
 
   public int getBalance() {
     return this.balance;
+  }
+
+  public int getInitialBalance() {
+    return this.initialBalance;
+  }
+
+  public int getMoneyInPot() {
+    return this.initialBalance - this.balance;
+  }
+
+  public int getRoundMoneyInPot() {
+    return this.moneyInPot[roundIdx];
   }
 
   public String getNickname() {
@@ -35,18 +52,27 @@ public final class Player {
   public Combination getCombination() {
     return this.combination;
   }
+
   public boolean isBB() {
     return this.isBB;
   }
 
+  public boolean isResolved() {
+    return this.isResolved;
+  }
+
   public void setBB() {
     this.isBB = true;
-    this.isSB = false;
+    this.balance -= GameSession.BB_SIZE;
   }
 
   public void setSB() {
     this.isSB = true;
-    this.isBB = false;
+    this.balance -= GameSession.SB_SIZE;
+  }
+
+  private void addRoundMoney(final int sum) {
+    moneyInPot[roundIdx] += sum;
   }
 
   public void setCombination(Combination combination) {
@@ -57,8 +83,12 @@ public final class Player {
     balance += delta;
   }
 
-  public void setFolded(final boolean folded) {
-    this.folded = folded;
+  public void newRound() {
+    this.roundIdx++;
+  }
+
+  public void setResolved() {
+    this.isResolved = true;
   }
 
   public boolean didFold() {
@@ -74,18 +104,18 @@ public final class Player {
   }
 
   public int raiseFixedSum(final int raiseSum) {
-    final boolean isAllIn = raiseSum >= balance;
-    balance -= Math.min(balance, raiseSum);
-    prevBetSum = raiseSum;
-    System.out.println(this.nickname + " raised " + (isAllIn ? " all in" : "") + ", balance: " + this.balance);
+    final int delta = raiseSum - this.getRoundMoneyInPot();
+    balance -= delta;
+    this.addRoundMoney(delta);
+    System.out.println(this.nickname + " raised " + (balance == 0 ? " all in" : "to " + raiseSum) + ", balance: " + this.balance);
     return raiseSum;
   }
 
   public int call(final int currRaiseSum) {
-    int callSum = currRaiseSum > 0 ? (currRaiseSum - prevBetSum) : GameSession.BB_SIZE;
-    callSum = Math.min(this.balance, callSum);
+    int callSum = Math.min(this.balance,
+        currRaiseSum > 0 ? currRaiseSum - this.getRoundMoneyInPot() : GameSession.BB_SIZE);
     balance -= callSum;
-    prevBetSum = callSum;
+    this.addRoundMoney(callSum);
     System.out.println("Player " + this.nickname + " called " + callSum + ", balance: " + this.balance);
     return callSum;
   }
@@ -95,10 +125,15 @@ public final class Player {
     System.out.println("Player " + this.nickname + " folded, balance: " + this.balance);
   }
 
-  public void resetPrevRoundData() {
-    this.prevBetSum = 0;
+  public void resetGameData() {
+    final int delta = this.balance - this.initialBalance;
+    if (delta > 0) System.out.println(this.nickname + " won " + delta + ", new balance: " + this.balance);
     this.isBB = false;
     this.isSB = false;
+    this.isResolved = false;
+    this.initialBalance = this.balance;
+    this.folded = this.initialBalance == 0;
+    for (int i = 0; i < moneyInPot.length; i++) moneyInPot[i] = 0;
+    roundIdx = 0;
   }
 }
-

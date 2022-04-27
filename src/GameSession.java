@@ -1,5 +1,6 @@
 import java.util.*;
-
+import java.util.stream.Stream;
+import java.util.function.Supplier;
 import enums.Combination;
 
 public final class GameSession {
@@ -17,7 +18,7 @@ public final class GameSession {
   private int playersPlayed;
   private boolean isPreflop = true;
   private int handsPlayed;
-  private final String[] STAGES = { "Flop", "Turn", "River" };
+  private final String[] ROUNDS = { "Flop", "Turn", "River" };
 
   public void start(final int yourBalance, final String nickname) {
     if (handsPlayed == 0) {
@@ -28,10 +29,13 @@ public final class GameSession {
         players[i] = player;
       }
     }
-    newRound();
+    newGame();
   }
 
   private class InfoLogger {
+    private final static String OLD_SYMBOL = "_";
+    private final static String NEW_SYMBOL = " ";
+
     public static void presentTableCards() {
       final int size = tableCards.size();
       for (int i = 0; i < size; i++) {
@@ -42,13 +46,11 @@ public final class GameSession {
 
     public static void printCombination() {
       final Player user = players[0];
-      final Combination combination = user.getCombination();
-      System.out.println("Your combination is " + combination.toString());
+      final String combinationStr = Helpers.replaceSymbol(user.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
+      System.out.println("Your combination is " + combinationStr.toLowerCase());
     }
 
     public static void presentCombinations() {
-      final String OLD_SYMBOL = "_";
-      final String NEW_SYMBOL = " ";
       for (final Player player : players) {
         if (!player.didFold()) {
           final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
@@ -57,7 +59,6 @@ public final class GameSession {
         }
       }
     }
-
   }
 
   private void assignPositions() {
@@ -65,49 +66,41 @@ public final class GameSession {
     bbIdx = sbIdx == PLAYERS_SEATED - 1 ? 0 : sbIdx + 1;
     final Player sbPlayer = players[sbIdx];
     sbPlayer.setSB();
-    sbPlayer.changeBalance(-SB_SIZE);
+    pot += SB_SIZE;
     final Player bbPlayer = players[bbIdx];
     bbPlayer.setBB();
-    bbPlayer.changeBalance(-BB_SIZE);
-    pot += SB_SIZE;
     pot += BB_SIZE;
   }
 
-  private void performBettingRound() {
+  private void handleRoundBetting() {
     final int MIN_RAISE_NUMBER = isPreflop ? 8 : 13;
     final int MIN_CALL_NUMBER = isPreflop ? 4 : 7;
     int currIdx = bbIdx == PLAYERS_SEATED - 1 ? 0 : bbIdx + 1;
     while (playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
       final boolean isBB = player.isBB();
+      final int balance = player.getBalance();
       if (!player.didFold()) {
-        if (player.getBalance() == 0) System.out.println("Player " + player.getNickname() + " went all in");
+        if (balance == 0) System.out.println("Player " + player.getNickname() + " went all in");
         else {
           final int handStrength = player.getCombination().ordinal();
           final int randomDecisionNum = Helpers.randomInRange(handStrength, 10 + handStrength);
           if (currIdx == 0) makeUserTurn(player);
           else if (isPreflop ? isBB && currRaiseSum == 0 : currRaiseSum == 0) {
-            if (randomDecisionNum >= MIN_RAISE_NUMBER) {
-              currRaiseSum = player.raise(currRaiseSum);
-              handleRaiseAction();
-            } else System.out.println("Player " + player.getNickname() + (isBB ? " (big blind) " : " ")
+            if (randomDecisionNum >= MIN_RAISE_NUMBER) handleRaiseAction(player, currRaiseSum);
+            else System.out.println("Player " + player.getNickname() + (isBB ? " (big blind) " : " ")
                   + "checked, balance: " + player.getBalance());
           } else {
             if (randomDecisionNum < MIN_CALL_NUMBER) player.fold();
             else if (randomDecisionNum < MIN_RAISE_NUMBER || player.getBalance() < currRaiseSum) pot += player.call(currRaiseSum);
-            else {
-              currRaiseSum = player.raise(currRaiseSum);
-              handleRaiseAction();
-            }
+            else handleRaiseAction(player, currRaiseSum);
           }
         }
       } else System.out.println("Player " + player.getNickname() + (player.getBalance() == 0 ? " sit out" : " folded"));
       if (++currIdx == PLAYERS_SEATED) currIdx = 0;
       playersPlayed++;
     }
-    playersPlayed = 0;
-    if (isPreflop) isPreflop = false;
-    currRaiseSum = 0;
+    resetRoundData();
   }
 
   private void makeUserTurn(final Player player) {
@@ -123,30 +116,41 @@ public final class GameSession {
     } catch (Exception e) {
       action = 'C';
     }
-    if (userCanCheck && action == 'C')
-      System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
+    if (userCanCheck && action == 'C') System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
     else {
       if (action == 'F') player.fold();
       else if (action == 'C') pot += player.call(currRaiseSum);
       else if (action == 'R') {
         if (!userCanRaise) pot += player.call(currRaiseSum);
         else {
-          int raiseSum = 0;
-          while (raiseSum <= BB_SIZE || raiseSum < currRaiseSum) {
+          int raiseSum;
+          do {
             System.out.print("Enter raise sum: ");
             raiseSum = input.nextInt();
-          }
-          raiseSum = Math.min(player.getBalance(), raiseSum);
-          currRaiseSum = player.raiseFixedSum(raiseSum);
-          handleRaiseAction();
+          } while (raiseSum < currRaiseSum);
+          handleRaiseAction(player, raiseSum);
         }
       }
     }
   }
 
-  private void handleRaiseAction() {
-    pot += currRaiseSum;
+  private void handleRaiseAction(final Player player, int raiseSum) {
+    final int prevRaiseSum = player.getRoundMoneyInPot();
+    final int newRaiseSum;
+    if (raiseSum != currRaiseSum) {
+      raiseSum = Math.min(prevRaiseSum == 0 ? player.getBalance() : player.getInitialBalance(), raiseSum);
+      newRaiseSum = player.raiseFixedSum(raiseSum);
+    } else newRaiseSum = player.raise(currRaiseSum);
+    pot += newRaiseSum - prevRaiseSum;
+    currRaiseSum = newRaiseSum;
     playersPlayed = 0;
+  }
+
+  private void resetRoundData() {
+    for (final Player player : players) player.newRound();
+    playersPlayed = 0;
+    if (isPreflop) isPreflop = false;
+    currRaiseSum = 0;
   }
 
   private void assignCombinations() {
@@ -179,32 +183,53 @@ public final class GameSession {
     return cards.get(0).toString() + " and " + cards.get(1);
   }
 
-  private void decideWinner() {
-    final int strongestHand = Arrays.asList(players)
-        .stream()
-        .filter(player -> !player.didFold())
+  private void handleWinners() {
+    final Supplier<Stream<Player>> unresolvedPlayersStream = () -> Arrays.asList(players).stream()
+        .filter(player -> !player.isResolved());
+    final Supplier<Stream<Player>> activeUnresolvedPlayersStream = () -> unresolvedPlayersStream.get()
+        .filter(player -> !player.didFold());
+    final int strongestHand = activeUnresolvedPlayersStream.get()
         .mapToInt(player -> player.getCombination().ordinal())
-        .sorted()
         .reduce(0, Math::max);
-    final List<Player> winnersList = Arrays.asList(players)
-        .stream()
-        .filter(player -> !player.didFold() && player.getCombination().ordinal() == strongestHand)
+    final List<Player> winners = activeUnresolvedPlayersStream.get()
+        .filter(player -> player.getCombination().ordinal() == strongestHand)
         .toList();
-    final int winnersCount = winnersList.size();
-    final int winSum = pot / winnersCount;
-    for (final Player winner : winnersList) {
-      winner.changeBalance(winSum);
-      System.out.println(winner.getNickname() + " won " + winSum + ", new balance: " + winner.getBalance());
-    }
+    final List<Player> allInWinners = winners.stream()
+        .filter(winner -> winner.getBalance() == 0)
+        .sorted((w1, w2) -> w1.getMoneyInPot() - w2.getMoneyInPot())
+        .toList();
+    if (allInWinners.size() > 0) {
+      final Player allInWinner = allInWinners.get(0);
+      final int winnerMoney = allInWinner.getMoneyInPot();
+      final List<Player> foldedPlayers = unresolvedPlayersStream.get()
+          .filter(player -> player.didFold() && player.getMoneyInPot() < winnerMoney).toList();
+      final int foldSum = foldedPlayers.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact);
+      final int activePlayersInPot = unresolvedPlayersStream.get()
+          .filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
+      final int winSum = winnerMoney * activePlayersInPot;
+      allocWinSumToWinners(winners, winSum + foldSum);
+      if (pot == 0) return;
+      allInWinner.setResolved();
+      handleWinners();
+    } else allocWinSumToWinners(winners, pot);
   }
 
-  private void resetPrevRoundData() {
-    for (final Player player : players) player.resetPrevRoundData();
+  private void allocWinSumToWinners(final List<Player> winners, final int winSum) {
+    final int winnersSize = winners.size();
+    for (final Player winner : winners) winner.changeBalance(winSum / winnersSize);
+    pot -= winSum;
+  }
+
+  private void resetGameData() {
+    for (final Player player : players) player.resetGameData();
+    pot = 0;
+    isPreflop = true;
+    currRaiseSum = 0;
   }
 
   private void dealHands() {
     for (int i = 0; i < PLAYERS_SEATED; i++) {
-      boolean isUser = i == 0;
+      final boolean isUser = i == 0;
       players[i].dealHand(cards);
       if (isUser) {
         final List<Card> hand = players[i].getHand();
@@ -213,7 +238,7 @@ public final class GameSession {
     }
   }
 
-  private void endRound() {
+  private void endGame() {
     final Scanner input = new Scanner(System.in);
     System.out.println("Hands played: " + handsPlayed);
     char symbol;
@@ -227,14 +252,10 @@ public final class GameSession {
       System.out.println("Thank you for playing");
       return;
     }
-    pot = 0;
-    isPreflop = true;
-    currRaiseSum = 0;
-    for (final Player player : players) player.setFolded(player.getBalance() == 0);
-    newRound();
+    newGame();
   }
 
-  private void newRound() {
+  private void newGame() {
     if (players[0].getBalance() == 0) {
       System.out.println("Your balance is 0. Game Over!");
       return;
@@ -245,19 +266,19 @@ public final class GameSession {
     Cards.shuffle(cards);
     dealHands();
     assignPositions();
-    performBettingRound();
-    for (int i = 0; i < STAGES.length; i++) {
+    handleRoundBetting();
+    for (int i = 0; i < ROUNDS.length; i++) {
       System.out.println("Pot is " + pot);
       Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
-      System.out.print(STAGES[i] + ": ");
+      System.out.print(ROUNDS[i] + ": ");
       InfoLogger.presentTableCards();
       InfoLogger.printCombination();
-      performBettingRound();
-      resetPrevRoundData();
+      handleRoundBetting();
     }
     InfoLogger.presentCombinations();
-    decideWinner();
-    endRound();
+    handleWinners();
+    resetGameData();
+    endGame();
   }
 }
