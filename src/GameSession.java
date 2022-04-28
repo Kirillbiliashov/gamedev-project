@@ -1,5 +1,7 @@
 import java.util.*;
 import java.util.stream.Stream;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class GameSession {
@@ -15,6 +17,7 @@ public final class GameSession {
   private int bbIdx;
   private int currRaiseSum;
   private int playersPlayed;
+  private int prevAllInSum;
   private boolean isPreflop = true;
   private int handsPlayed;
   private final String[] ROUNDS = { "Flop", "Turn", "River" };
@@ -75,7 +78,7 @@ public final class GameSession {
     final int MIN_RAISE_NUMBER = isPreflop ? 8 : 13;
     final int MIN_CALL_NUMBER = isPreflop ? 4 : 7;
     int currIdx = bbIdx == PLAYERS_SEATED - 1 ? 0 : bbIdx + 1;
-    while (playersPlayed < PLAYERS_SEATED) {
+    while (++playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
       final boolean isBB = player.isBB();
       final int balance = player.getBalance();
@@ -88,16 +91,15 @@ public final class GameSession {
           else if (isPreflop ? isBB && currRaiseSum == 0 : currRaiseSum == 0) {
             if (randomDecisionNum >= MIN_RAISE_NUMBER) handleRaiseAction(player, currRaiseSum);
             else System.out.println("Player " + player.getNickname() + (isBB ? " (big blind) " : " ")
-                  + "checked, balance: " + player.getBalance());
+                  + "checked, balance: " + balance);
           } else {
             if (randomDecisionNum < MIN_CALL_NUMBER) player.fold();
-            else if (randomDecisionNum < MIN_RAISE_NUMBER || player.getBalance() < currRaiseSum) pot += player.call(currRaiseSum);
+            else if (randomDecisionNum < MIN_RAISE_NUMBER || balance < currRaiseSum) pot += player.call(currRaiseSum);
             else handleRaiseAction(player, currRaiseSum);
           }
         }
-      } else System.out.println("Player " + player.getNickname() + (player.getBalance() == 0 ? " sit out" : " folded"));
+      } else System.out.println(player.getNickname() + (balance == 0 ? " sit out" : " folded"));
       if (++currIdx == PLAYERS_SEATED) currIdx = 0;
-      playersPlayed++;
     }
     resetRoundData();
   }
@@ -181,23 +183,24 @@ public final class GameSession {
         .reduce(0, Math::max);
     final List<Player> winners = activeUnresolvedPlayersStream.get()
         .filter(player -> player.getCombination().ordinal() == strongestHand)
-        .toList();
-    final List<Player> allInWinners = winners.stream()
-        .filter(winner -> winner.getBalance() == 0)
         .sorted((w1, w2) -> w1.getMoneyInPot() - w2.getMoneyInPot())
         .toList();
-    if (!allInWinners.isEmpty()) {
-      final Player allInWinner = allInWinners.get(0);
-      final int winnerMoney = allInWinner.getMoneyInPot();
-      final List<Player> foldedPlayers = unresolvedPlayersStream.get()
-          .filter(player -> player.didFold() && player.getMoneyInPot() < winnerMoney).toList();
-      final int foldSum = foldedPlayers.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact);
+    final Player winner = winners.get(0);
+    final int balance = winner.getBalance();
+    if (balance == 0) {
+      final int winnerMoney = winner.getMoneyInPot();
+      final List<Player> lostPlayers = unresolvedPlayersStream.get()
+          .filter(player -> player.getMoneyInPot() < winnerMoney && winners.indexOf(player) == - 1).toList();
+      final int lostSum = lostPlayers.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact)
+       - prevAllInSum * lostPlayers.size();
       final int activePlayersInPot = unresolvedPlayersStream.get()
           .filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
-      final int winSum = winnerMoney * activePlayersInPot;
-      allocWinSumToWinners(winners, winSum + foldSum);
+      final int winSum = (winnerMoney - prevAllInSum) * activePlayersInPot;
+      allocWinSumToWinners(winners, winSum + lostSum);
       if (pot == 0) return;
-      allInWinner.setResolved();
+      for (final Player lostPlayer: lostPlayers) lostPlayer.setResolved();
+      winner.setResolved();
+      prevAllInSum = winnerMoney;
       handleWinners();
     } else allocWinSumToWinners(winners, pot);
   }
@@ -213,6 +216,7 @@ public final class GameSession {
     pot = 0;
     isPreflop = true;
     currRaiseSum = 0;
+    prevAllInSum = 0;
   }
 
   private void dealHands() {

@@ -32,7 +32,10 @@ public final class Player {
   }
 
   public int getMoneyInPot() {
-    return this.initialBalance - this.balance;
+    int potMoneySum = 0;
+    for (final int roundMoney: moneyInPot) potMoneySum += roundMoney;
+    return potMoneySum;
+    
   }
 
   public int getRoundMoneyInPot() {
