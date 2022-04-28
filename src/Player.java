@@ -1,7 +1,4 @@
-package src.app;
-
 import java.util.*;
-import src.enums.Combination;
 
 public final class Player {
   private final String nickname;

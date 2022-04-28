@@ -1,8 +1,5 @@
-package src.app;
-
 import java.util.*;
 import java.util.stream.Stream;
-import src.enums.*;
 import java.util.function.Supplier;
 
 public final class GameSession {
@@ -159,11 +156,12 @@ public final class GameSession {
     for (final Player player : players) {
       final List<Card> playerHand = new ArrayList<>(player.getHand());
       playerHand.addAll(tableCards);
-      Combination[] combinations = Combination.values();
-      for (final Combination combination : combinations) {
+      List<Combination> combinationsList = Arrays.asList(Combination.values());
+      Collections.reverse(combinationsList);
+      for (final Combination combination : combinationsList) {
         if (combination.check(playerHand)) {
           player.setCombination(combination);
-          return;
+          break;
         }
       }
     }
@@ -180,7 +178,7 @@ public final class GameSession {
         .filter(player -> !player.didFold());
     final int strongestHand = activeUnresolvedPlayersStream.get()
         .mapToInt(player -> player.getCombination().ordinal())
-        .reduce(0, Math::min);
+        .reduce(0, Math::max);
     final List<Player> winners = activeUnresolvedPlayersStream.get()
         .filter(player -> player.getCombination().ordinal() == strongestHand)
         .toList();
