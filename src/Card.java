@@ -17,6 +17,7 @@ public final class Card {
 
   @Override
   public String toString() {
-    return rank.toString().toLowerCase() + " of " + suit.toString().toLowerCase();
+    final int rankValue = rank.ordinal();
+    return (rankValue < Rank.TEN.ordinal() ? rankValue + 2 : rank.toString().substring(0, 1)) + suit.getEmoji();
   }
 }
