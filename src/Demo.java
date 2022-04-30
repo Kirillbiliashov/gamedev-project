@@ -1,5 +1,7 @@
 import java.util.*;
 
+import org.w3c.dom.ranges.Range;
+
 public final class Demo {
   public static void main(String[] args) {
     final Scanner input = new Scanner(System.in);
@@ -16,7 +18,6 @@ public final class Demo {
     } while (balance < GameSession.MIN_BALANCE || balance > GameSession.MAX_BALANCE);
     final GameSession session = new GameSession();
     session.start(balance, nickname);
-
+    
   }
-
 }

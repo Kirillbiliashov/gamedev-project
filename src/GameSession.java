@@ -1,8 +1,6 @@
 import java.util.*;
 import java.util.stream.Stream;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.*;
 
 public final class GameSession {
   private static final int PLAYERS_SEATED = 6;
@@ -21,6 +19,7 @@ public final class GameSession {
   private boolean isPreflop = true;
   private int handsPlayed;
   private final String[] ROUNDS = { "Flop", "Turn", "River" };
+  private final HashMap<Range, Consumer<Player>> actions = new HashMap<>(4);
 
   public void start(final int yourBalance, final String nickname) {
     if (handsPlayed == 0) {
@@ -30,6 +29,10 @@ public final class GameSession {
         final Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
         players[i] = player;
       }
+      actions.put(new Range(0, 4), Player::fold);
+      actions.put(new Range(5, 7), (player) -> pot += player.call(currRaiseSum));
+      actions.put(new Range(8, 20), (player) -> handleRaiseAction(player, currRaiseSum));
+      actions.put(new Range(20, 30), Player::check);
     }
     newGame();
   }
@@ -39,10 +42,7 @@ public final class GameSession {
     private final static String NEW_SYMBOL = " ";
 
     public static void presentTableCards() {
-      final int size = tableCards.size();
-      for (int i = 0; i < size; i++) {
-        System.out.print(tableCards.get(i).toString() + (i == size - 1 ? "." : ", "));
-      }
+     for (final Card card: tableCards) System.out.print(card.toString() + " ");
       System.out.println();
     }
 
@@ -75,27 +75,26 @@ public final class GameSession {
   }
 
   private void handleRoundBetting() {
-    final int MIN_RAISE_NUMBER = isPreflop ? 8 : 13;
-    final int MIN_CALL_NUMBER = isPreflop ? 4 : 7;
     int currIdx = bbIdx == PLAYERS_SEATED - 1 ? 0 : bbIdx + 1;
     while (++playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
-      final boolean isBB = player.isBB();
       final int balance = player.getBalance();
+      final boolean canCheck = currRaiseSum == 0 && (!isPreflop || player.isBB());
       if (!player.didFold()) {
         if (balance == 0) System.out.println("Player " + player.getNickname() + " went all in");
         else {
-          final int handStrength = player.getCombination().ordinal();
-          final int randomDecisionNum = Helpers.randomInRange(handStrength, 10 + handStrength);
           if (currIdx == 0) makeUserTurn(player);
-          else if (isPreflop ? isBB && currRaiseSum == 0 : currRaiseSum == 0) {
-            if (randomDecisionNum >= MIN_RAISE_NUMBER) handleRaiseAction(player, currRaiseSum);
-            else System.out.println("Player " + player.getNickname() + (isBB ? " (big blind) " : " ")
-                  + "checked, balance: " + balance);
-          } else {
-            if (randomDecisionNum < MIN_CALL_NUMBER) player.fold();
-            else if (randomDecisionNum < MIN_RAISE_NUMBER || balance < currRaiseSum) pot += player.call(currRaiseSum);
-            else handleRaiseAction(player, currRaiseSum);
+          else {
+            final int handStrength = player.getCombination().ordinal();
+            final int MIN_RANDOM_NUMBER  = canCheck ? 18 - handStrength : handStrength;
+            final int MAX_RANDOM_NUMBER  = canCheck ? 30 - handStrength : 10 + handStrength;        
+            final int randomDecisionNum = Helpers.randomInRange(MIN_RANDOM_NUMBER, MAX_RANDOM_NUMBER);
+            for (final Range range : actions.keySet()) {
+              if (range.contains(randomDecisionNum)) {
+                actions.get(range).accept(player);
+                break;
+              }
+            }
           }
         }
       } else System.out.println(player.getNickname() + (balance == 0 ? " sit out" : " folded"));

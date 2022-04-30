@@ -65,11 +65,13 @@ public final class Player {
   public void setBB() {
     this.isBB = true;
     this.balance -= GameSession.BB_SIZE;
+    this.addRoundMoney(GameSession.BB_SIZE);
   }
 
   public void setSB() {
     this.isSB = true;
     this.balance -= GameSession.SB_SIZE;
+    this.addRoundMoney(GameSession.SB_SIZE);
   }
 
   private void addRoundMoney(final int sum) {
@@ -99,7 +101,8 @@ public final class Player {
   public int raise(final int currRaiseSum) {
     final int MAX_BB_SIZE_RAISE = 10;
     final int MIN_BB_SIZE_RAISE = 2;
-    final int randomRaiseSum = Helpers.randomInRange(GameSession.BB_SIZE * MIN_BB_SIZE_RAISE, GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
+    final int randomRaiseSum = Helpers.randomInRange(GameSession.BB_SIZE * MIN_BB_SIZE_RAISE,
+        GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
     final int raiseSum = randomRaiseSum - randomRaiseSum % GameSession.SB_SIZE + currRaiseSum;
     return raiseFixedSum(raiseSum);
   }
@@ -124,6 +127,9 @@ public final class Player {
   public void fold() {
     this.folded = true;
     System.out.println("Player " + this.nickname + " folded, balance: " + this.balance);
+  }
+  public void check() {
+    System.out.println("Player " + this.nickname + (this.isBB ? " (big blind) " : " ") + "checked, balance: " + this.balance);
   }
 
   public void resetGameData() {
