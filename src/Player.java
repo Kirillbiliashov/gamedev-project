@@ -8,7 +8,7 @@ public final class Player {
   private List<Card> hand;
   private boolean isBB = false;
   private boolean isSB = false;
-  private boolean folded = false;
+  private boolean didFold = false;
   private boolean isResolved = false;
   private final int[] moneyInPot = new int[4];
   private Combination combination = Combination.HIGH_CARD;
@@ -58,8 +58,8 @@ public final class Player {
     return this.isBB;
   }
 
-  public boolean isResolved() {
-    return this.isResolved;
+  public boolean isUnResolved() {
+    return !this.isResolved;
   }
 
   public void setBB() {
@@ -94,8 +94,8 @@ public final class Player {
     this.isResolved = true;
   }
 
-  public boolean didFold() {
-    return this.folded;
+  public boolean isActive() {
+    return !this.didFold;
   }
 
   public int raise(final int currRaiseSum) {
@@ -125,7 +125,7 @@ public final class Player {
   }
 
   public void fold() {
-    this.folded = true;
+    this.didFold = true;
     System.out.println("Player " + this.nickname + " folded, balance: " + this.balance);
   }
   public void check() {
@@ -139,7 +139,7 @@ public final class Player {
     this.isSB = false;
     this.isResolved = false;
     this.initialBalance = this.balance;
-    this.folded = this.initialBalance == 0;
+    this.didFold = this.initialBalance == 0;
     for (int i = 0; i < moneyInPot.length; i++) moneyInPot[i] = 0;
     roundIdx = 0;
   }

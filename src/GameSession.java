@@ -1,5 +1,4 @@
 import java.util.*;
-import java.util.stream.Stream;
 import java.util.function.*;
 
 public final class GameSession {
@@ -55,7 +54,7 @@ public final class GameSession {
 
     public static void presentCombinations() {
       for (final Player player : players) {
-        if (!player.didFold()) {
+        if (player.isActive()) {
           final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
           System.out.println(player.getNickname() + " has got " + handDescription(player.getHand()) +
               " (" + combination.toLowerCase() + ")");
@@ -80,7 +79,7 @@ public final class GameSession {
     while (++playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
       final int balance = player.getBalance();
-      if (!player.didFold()) {
+      if (player.isActive()) {
         if (balance == 0) System.out.println("Player " + player.getNickname() + " went all in");
         else {
           if (currIdx == 0) makeUserTurn(player);
@@ -175,35 +174,47 @@ public final class GameSession {
   }
 
   private void handleWinners() {
-    final Supplier<Stream<Player>> unresolvedPlayersStream = () -> Arrays.asList(players).stream()
-        .filter(player -> !player.isResolved());
-    final Supplier<Stream<Player>> activeUnresolvedPlayersStream = () -> unresolvedPlayersStream.get()
-        .filter(player -> !player.didFold());
-    final int strongestHand = activeUnresolvedPlayersStream.get()
-        .mapToInt(player -> player.getCombination().ordinal())
-        .reduce(0, Math::max);
-    final List<Player> winners = activeUnresolvedPlayersStream.get()
-        .filter(player -> player.getCombination().ordinal() == strongestHand)
-        .sorted((w1, w2) -> w1.getMoneyInPot() - w2.getMoneyInPot())
-        .toList();
+    final List<Player> unresolvedPlayers = Arrays.asList(players).stream().filter(Player::isUnResolved).toList();
+    final List<Player> activeUnresolvedPlayers = unresolvedPlayers.stream().filter(Player::isActive).toList();
+    final int strongestHand = getStrongestHand(activeUnresolvedPlayers);
+    final List<Player> winners = getWinners(activeUnresolvedPlayers, strongestHand);
     final Player winner = winners.get(0);
     final int balance = winner.getBalance();
     if (balance == 0) {
       final int winnerMoney = winner.getMoneyInPot();
-      final List<Player> lostPlayers = unresolvedPlayersStream.get()
-          .filter(player -> player.getMoneyInPot() < winnerMoney && winners.indexOf(player) == -1).toList();
-      final int lostSum = lostPlayers.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact)
-          - prevAllInSum * lostPlayers.size();
-      final int activePlayersInPot = unresolvedPlayersStream.get()
-          .filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
+      final List<Player> loserPlayers = getLoserPlayers(unresolvedPlayers, winners, winnerMoney);
+      final int lostAmount = getLostAmount(loserPlayers);
+      final int activePlayersInPot = getActivePlayersInPotSize(unresolvedPlayers, winnerMoney);
       final int winSum = (winnerMoney - prevAllInSum) * activePlayersInPot;
-      allocWinSumToWinners(winners, winSum + lostSum);
+      allocWinSumToWinners(winners, winSum + lostAmount);
       if (pot == 0) return;
-      for (final Player lostPlayer : lostPlayers) lostPlayer.setResolved();
+      for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
       winner.setResolved();
       prevAllInSum = winnerMoney;
       handleWinners();
     } else allocWinSumToWinners(winners, pot);
+  }
+
+  private int getStrongestHand(final List<Player> players) {
+    return players.stream().mapToInt(player -> player.getCombination().ordinal()).reduce(0, Math::max);
+  }
+
+  private List<Player> getWinners(final List<Player> players, final int strongestHand) {
+    return players.stream().filter(player -> player.getCombination().ordinal() == strongestHand)
+        .sorted((w1, w2) -> w1.getMoneyInPot() - w2.getMoneyInPot()).toList();
+  }
+
+  private List<Player> getLoserPlayers(final List<Player> players, final List<Player> winners, final int winnerMoney) {
+    return players.stream().filter(player -> player.getMoneyInPot() < winnerMoney && winners.indexOf(player) == -1)
+        .toList();
+  }
+
+  private int getLostAmount(final List<Player> players) {
+    return players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact) - prevAllInSum * players.size();
+  }
+
+  private int getActivePlayersInPotSize(final List<Player> players, final int winnerMoney) {
+    return players.stream().filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
   }
 
   private void allocWinSumToWinners(final List<Player> winners, final int winSum) {
