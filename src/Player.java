@@ -99,6 +99,7 @@ public final class Player {
   }
 
   public int raise(final int currRaiseSum) {
+    if (currRaiseSum > this.balance) return this.call(currRaiseSum);
     final int MAX_BB_SIZE_RAISE = 10;
     final int MIN_BB_SIZE_RAISE = 2;
     final int randomRaiseSum = Helpers.randomInRange(GameSession.BB_SIZE * MIN_BB_SIZE_RAISE,
@@ -116,8 +117,7 @@ public final class Player {
   }
 
   public int call(final int currRaiseSum) {
-    int callSum = Math.min(this.balance,
-        currRaiseSum > 0 ? currRaiseSum - this.getRoundMoneyInPot() : GameSession.BB_SIZE);
+    int callSum = Math.min(this.balance, currRaiseSum > 0 ? currRaiseSum - this.getRoundMoneyInPot() : GameSession.BB_SIZE);
     balance -= callSum;
     this.addRoundMoney(callSum);
     System.out.println("Player " + this.nickname + " called " + callSum + ", balance: " + this.balance);

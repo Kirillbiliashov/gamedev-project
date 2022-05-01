@@ -18,8 +18,9 @@ public final class GameSession {
   private int prevAllInSum;
   private boolean isPreflop = true;
   private int handsPlayed;
+  private final Predicate<Player> canCheck = (player) -> currRaiseSum == 0 && (!isPreflop || player.isBB());
   private final String[] ROUNDS = { "Flop", "Turn", "River" };
-  private final HashMap<Range, Consumer<Player>> actions = new HashMap<>(4);
+  private final HashMap<Action, Consumer<Player>> actions = new HashMap<>(Action.values().length);
 
   public void start(final int yourBalance, final String nickname) {
     if (handsPlayed == 0) {
@@ -29,10 +30,10 @@ public final class GameSession {
         final Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
         players[i] = player;
       }
-      actions.put(new Range(0, 4), Player::fold);
-      actions.put(new Range(5, 7), (player) -> pot += player.call(currRaiseSum));
-      actions.put(new Range(8, 20), (player) -> handleRaiseAction(player, currRaiseSum));
-      actions.put(new Range(20, 30), Player::check);
+      actions.put(Action.FOLD, Player::fold);
+      actions.put(Action.CALL, (player) -> pot += player.call(currRaiseSum));
+      actions.put(Action.RAISE, (player) -> handleRaiseAction(player));
+      actions.put(Action.CHECK, Player::check);
     }
     newGame();
   }
@@ -42,7 +43,7 @@ public final class GameSession {
     private final static String NEW_SYMBOL = " ";
 
     public static void presentTableCards() {
-     for (final Card card: tableCards) System.out.print(card.toString() + " ");
+      for (final Card card : tableCards) System.out.print(card.toString() + " ");
       System.out.println();
     }
 
@@ -79,19 +80,18 @@ public final class GameSession {
     while (++playersPlayed < PLAYERS_SEATED) {
       final Player player = players[currIdx];
       final int balance = player.getBalance();
-      final boolean canCheck = currRaiseSum == 0 && (!isPreflop || player.isBB());
       if (!player.didFold()) {
         if (balance == 0) System.out.println("Player " + player.getNickname() + " went all in");
         else {
           if (currIdx == 0) makeUserTurn(player);
           else {
             final int handStrength = player.getCombination().ordinal();
-            final int MIN_RANDOM_NUMBER  = canCheck ? 18 - handStrength : handStrength;
-            final int MAX_RANDOM_NUMBER  = canCheck ? 30 - handStrength : 10 + handStrength;        
+            final int MIN_RANDOM_NUMBER = this.canCheck.test(player) ? 18 - handStrength : handStrength;
+            final int MAX_RANDOM_NUMBER = this.canCheck.test(player) ? 30 - handStrength : 10 + handStrength;
             final int randomDecisionNum = Helpers.randomInRange(MIN_RANDOM_NUMBER, MAX_RANDOM_NUMBER);
-            for (final Range range : actions.keySet()) {
-              if (range.contains(randomDecisionNum)) {
-                actions.get(range).accept(player);
+            for (final Action action : actions.keySet()) {
+              if (action.getRange().contains(randomDecisionNum)) {
+                actions.get(action).accept(player);
                 break;
               }
             }
@@ -106,39 +106,41 @@ public final class GameSession {
   private void makeUserTurn(final Player player) {
     final int balance = player.getBalance();
     final Scanner input = new Scanner(System.in);
-    final boolean userCanCheck = isPreflop ? bbIdx == 0 && currRaiseSum == 0 : currRaiseSum == 0;
-    final boolean userCanRaise = balance > currRaiseSum;
-    char action;
+    Action userAction = this.canCheck.test(player) ? Action.CHECK : Action.CALL;
+    final Action[] actionsArr = Action.values();
     try {
-      System.out.print("Your balance is " + balance + ". Enter " + (userCanRaise ? "R to raise, " : "") + "C to "
-          + (userCanCheck ? "check: " : "call, F to fold: "));
-      action = input.nextLine().charAt(0);
-    } catch (Exception e) {
-      action = 'C';
-    }
-    if (userCanCheck && action == 'C') System.out.println("Player " + player.getNickname() + " checked, balance: " + balance);
-    else {
-      if (action == 'F') player.fold();
-      else if (action == 'C') pot += player.call(currRaiseSum);
-      else if (action == 'R') {
-        if (!userCanRaise) pot += player.call(currRaiseSum);
-        else {
-          int raiseSum;
-          do {
-            System.out.print("Enter raise sum: ");
-            raiseSum = input.nextInt();
-          } while (raiseSum < currRaiseSum);
-          handleRaiseAction(player, raiseSum);
+      System.out.print("Your balance is " + balance + ". Enter " + (balance > currRaiseSum ? "Raise" : "") +
+          (this.canCheck.test(player) ? " or Check: " : ", Call, or Fold:  "));
+      final String inputStr = input.nextLine().substring(0, 2).toUpperCase();
+      for (final Action action : actionsArr) {
+        if (action.toString().startsWith(inputStr)) {
+          userAction = action;
+          break;
         }
+      }
+    } catch (Exception e) {
+      System.out.println("Error message: " + e.getMessage());
+    }
+    for (final Action action : actions.keySet()) {
+      if (action == userAction) {
+        actions.get(action).accept(player);
+        break;
       }
     }
   }
 
-  private void handleRaiseAction(final Player player, int raiseSum) {
+  private void handleRaiseAction(final Player player) {
+    final int idx = Arrays.asList(players).indexOf(player);
     final int prevRaiseSum = player.getRoundMoneyInPot();
     final int newRaiseSum;
-    if (raiseSum != currRaiseSum) {
-      raiseSum = Math.min(prevRaiseSum == 0 ? player.getBalance() : player.getInitialBalance(), raiseSum);
+    if (idx == 0) {
+      final Scanner input = new Scanner(System.in);
+      int raiseSum;
+      do {
+        System.out.print("Enter raise sum: ");
+        raiseSum = input.nextInt();
+      } while (raiseSum < currRaiseSum);
+      raiseSum = Math.min(prevRaiseSum + player.getBalance(), raiseSum);
       newRaiseSum = player.raiseFixedSum(raiseSum);
     } else newRaiseSum = player.raise(currRaiseSum);
     pot += newRaiseSum - prevRaiseSum;
@@ -189,15 +191,15 @@ public final class GameSession {
     if (balance == 0) {
       final int winnerMoney = winner.getMoneyInPot();
       final List<Player> lostPlayers = unresolvedPlayersStream.get()
-          .filter(player -> player.getMoneyInPot() < winnerMoney && winners.indexOf(player) == - 1).toList();
+          .filter(player -> player.getMoneyInPot() < winnerMoney && winners.indexOf(player) == -1).toList();
       final int lostSum = lostPlayers.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact)
-       - prevAllInSum * lostPlayers.size();
+          - prevAllInSum * lostPlayers.size();
       final int activePlayersInPot = unresolvedPlayersStream.get()
           .filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
       final int winSum = (winnerMoney - prevAllInSum) * activePlayersInPot;
       allocWinSumToWinners(winners, winSum + lostSum);
       if (pot == 0) return;
-      for (final Player lostPlayer: lostPlayers) lostPlayer.setResolved();
+      for (final Player lostPlayer : lostPlayers) lostPlayer.setResolved();
       winner.setResolved();
       prevAllInSum = winnerMoney;
       handleWinners();
