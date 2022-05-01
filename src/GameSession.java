@@ -2,7 +2,7 @@ import java.util.*;
 import java.util.function.*;
 
 public final class GameSession {
-  private static final int PLAYERS_SEATED = 6;
+  public static final int PLAYERS_SEATED = 6;
   public static final int MIN_BALANCE = 5000;
   public static final int MAX_BALANCE = 25000;
   public static final int BB_SIZE = 100;
@@ -14,12 +14,11 @@ public final class GameSession {
   private int bbIdx;
   private int currRaiseSum;
   private int playersPlayed;
-  private int prevAllInSum;
   private boolean isPreflop = true;
   private int handsPlayed;
-  private final Predicate<Player> canCheck = (player) -> currRaiseSum == 0 && (!isPreflop || player.isBB());
   private final String[] ROUNDS = { "Flop", "Turn", "River" };
   private final HashMap<Action, Consumer<Player>> actions = new HashMap<>(Action.values().length);
+  private WinnersHandler winnersHandler;
 
   public void start(final int yourBalance, final String nickname) {
     if (handsPlayed == 0) {
@@ -85,8 +84,8 @@ public final class GameSession {
           if (currIdx == 0) makeUserTurn(player);
           else {
             final int handStrength = player.getCombination().ordinal();
-            final int MIN_RANDOM_NUMBER = this.canCheck.test(player) ? 18 - handStrength : handStrength;
-            final int MAX_RANDOM_NUMBER = this.canCheck.test(player) ? 30 - handStrength : 10 + handStrength;
+            final int MIN_RANDOM_NUMBER = player.canCheck(currRaiseSum, isPreflop) ? 18 - handStrength : handStrength;
+            final int MAX_RANDOM_NUMBER = player.canCheck(currRaiseSum, isPreflop) ? 30 - handStrength : 10 + handStrength;
             final int randomDecisionNum = Helpers.randomInRange(MIN_RANDOM_NUMBER, MAX_RANDOM_NUMBER);
             for (final Action action : actions.keySet()) {
               if (action.getRange().contains(randomDecisionNum)) {
@@ -105,11 +104,11 @@ public final class GameSession {
   private void makeUserTurn(final Player player) {
     final int balance = player.getBalance();
     final Scanner input = new Scanner(System.in);
-    Action userAction = this.canCheck.test(player) ? Action.CHECK : Action.CALL;
+    Action userAction = player.canCheck(currRaiseSum, isPreflop) ? Action.CHECK : Action.CALL;
     final Action[] actionsArr = Action.values();
     try {
       System.out.print("Your balance is " + balance + ". Enter " + (balance > currRaiseSum ? "Raise" : "") +
-          (this.canCheck.test(player) ? " or Check: " : ", Call, or Fold:  "));
+          (player.canCheck(currRaiseSum, isPreflop) ? " or Check: " : ", Call, or Fold:  "));
       final String inputStr = input.nextLine().substring(0, 2).toUpperCase();
       for (final Action action : actionsArr) {
         if (action.toString().startsWith(inputStr)) {
@@ -173,62 +172,11 @@ public final class GameSession {
     return cards.get(0).toString() + " and " + cards.get(1);
   }
 
-  private void handleWinners() {
-    final List<Player> unresolvedPlayers = Arrays.asList(players).stream().filter(Player::isUnResolved).toList();
-    final List<Player> activeUnresolvedPlayers = unresolvedPlayers.stream().filter(Player::isActive).toList();
-    final int strongestHand = getStrongestHand(activeUnresolvedPlayers);
-    final List<Player> winners = getWinners(activeUnresolvedPlayers, strongestHand);
-    final Player winner = winners.get(0);
-    final int balance = winner.getBalance();
-    if (balance == 0) {
-      final int winnerMoney = winner.getMoneyInPot();
-      final List<Player> loserPlayers = getLoserPlayers(unresolvedPlayers, winners, winnerMoney);
-      final int lostAmount = getLostAmount(loserPlayers);
-      final int activePlayersInPot = getActivePlayersInPotSize(unresolvedPlayers, winnerMoney);
-      final int winSum = (winnerMoney - prevAllInSum) * activePlayersInPot;
-      allocWinSumToWinners(winners, winSum + lostAmount);
-      if (pot == 0) return;
-      for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
-      winner.setResolved();
-      prevAllInSum = winnerMoney;
-      handleWinners();
-    } else allocWinSumToWinners(winners, pot);
-  }
-
-  private int getStrongestHand(final List<Player> players) {
-    return players.stream().mapToInt(player -> player.getCombination().ordinal()).reduce(0, Math::max);
-  }
-
-  private List<Player> getWinners(final List<Player> players, final int strongestHand) {
-    return players.stream().filter(player -> player.getCombination().ordinal() == strongestHand)
-        .sorted((w1, w2) -> w1.getMoneyInPot() - w2.getMoneyInPot()).toList();
-  }
-
-  private List<Player> getLoserPlayers(final List<Player> players, final List<Player> winners, final int winnerMoney) {
-    return players.stream().filter(player -> player.getMoneyInPot() < winnerMoney && winners.indexOf(player) == -1)
-        .toList();
-  }
-
-  private int getLostAmount(final List<Player> players) {
-    return players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact) - prevAllInSum * players.size();
-  }
-
-  private int getActivePlayersInPotSize(final List<Player> players, final int winnerMoney) {
-    return players.stream().filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
-  }
-
-  private void allocWinSumToWinners(final List<Player> winners, final int winSum) {
-    final int winnersSize = winners.size();
-    for (final Player winner : winners) winner.changeBalance(winSum / winnersSize);
-    pot -= winSum;
-  }
-
   private void resetGameData() {
     for (final Player player : players) player.resetGameData();
     pot = 0;
     isPreflop = true;
     currRaiseSum = 0;
-    prevAllInSum = 0;
   }
 
   private void dealHands() {
@@ -258,12 +206,11 @@ public final class GameSession {
     }
     newGame();
   }
+  public int getUserBalance() {
+    return players[0].getBalance();
+  }
 
-  private void newGame() {
-    if (players[0].getBalance() == 0) {
-      System.out.println("Your balance is 0. Game Over!");
-      return;
-    }
+  public void newGame() {
     handsPlayed++;
     cards = Cards.getAll();
     tableCards = new ArrayList<>();
@@ -281,7 +228,8 @@ public final class GameSession {
       handleRoundBetting();
     }
     InfoLogger.presentCombinations();
-    handleWinners();
+   winnersHandler = new WinnersHandler(players, pot);
+   winnersHandler.handle();
     resetGameData();
     endGame();
   }

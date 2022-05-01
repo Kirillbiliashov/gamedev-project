@@ -23,6 +23,10 @@ public final class Player {
     hand = Cards.deal(cards, 2);
   }
 
+  public boolean canCheck(final int currRaiseSum, final boolean isPreflop) {
+    return currRaiseSum == 0 && (!isPreflop || this.isBB);
+  }
+
   public int getBalance() {
     return this.balance;
   }
