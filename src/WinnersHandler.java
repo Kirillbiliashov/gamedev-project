@@ -1,12 +1,10 @@
 import java.util.*;
 
-public class WinnersHandler {
-  private final Player[] players;
-  private int pot;
+public class WinnersHandler extends Handler {
   private int prevAllInSum;
 
   public WinnersHandler(final Player[] players, final int pot) {
-    this.players = players;
+    super(players);
     this.pot = pot;
   }
 

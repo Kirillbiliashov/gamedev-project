@@ -1,17 +1,16 @@
 import java.util.*;
 import java.util.function.*;
 
-public class RoundHandler {
-  private final Player[] players;
+public class RoundHandler extends Handler {
   private int currRaiseSum;
   private int playersPlayed;
   private final HashMap<Action, Consumer<Player>> actions = new HashMap<>(Action.values().length);
-  private int pot = GameSession.BB_SIZE + GameSession.SB_SIZE;
   private boolean isPreflop = true;
   private int bbIdx;
 
   public RoundHandler(final Player[] players) {
-    this.players = players;
+    super(players);
+    this.pot = GameSession.BB_SIZE + GameSession.SB_SIZE;
     actions.put(Action.FOLD, Player::fold);
     actions.put(Action.CALL, (player) -> this.pot += player.call(currRaiseSum));
     actions.put(Action.RAISE, (player) -> handleRaiseAction(player));
@@ -25,7 +24,7 @@ public class RoundHandler {
     pot = GameSession.BB_SIZE + GameSession.SB_SIZE;
   }
 
-  public void performRoundBetting() {
+  public void handle() {
     int currIdx = bbIdx == GameSession.PLAYERS_SEATED - 1 ? 0 : bbIdx + 1;
     while (++playersPlayed < GameSession.PLAYERS_SEATED) {
       final Player player = players[currIdx];

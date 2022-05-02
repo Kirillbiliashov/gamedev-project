@@ -125,14 +125,14 @@ public final class GameSession {
     Cards.shuffle(cards);
     dealHands();
     assignPositions();
-    roundHandler.performRoundBetting();
+    roundHandler.handle();
     for (int i = 0; i < ROUNDS.length; i++) {
       Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
       System.out.print(ROUNDS[i] + ": ");
       InfoLogger.presentTableCards();
       InfoLogger.printCombination();
-     roundHandler.performRoundBetting();
+     roundHandler.handle();
     }
     InfoLogger.presentCombinations();
     winnersHandler = new WinnersHandler(players, roundHandler.getPot());
