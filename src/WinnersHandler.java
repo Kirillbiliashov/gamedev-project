@@ -3,9 +3,8 @@ import java.util.*;
 public class WinnersHandler extends Handler {
   private int prevAllInSum;
 
-  public WinnersHandler(final Player[] players, final int pot) {
+  public WinnersHandler(final Player[] players) {
     super(players);
-    this.pot = pot;
   }
 
   public void handle() {
@@ -55,5 +54,9 @@ public class WinnersHandler extends Handler {
     final int winnersSize = winners.size();
     for (final Player winner : winners) winner.changeBalance(winSum / winnersSize);
     pot -= winSum;
+  }
+
+  public void setPotSize(final int potSize) {
+    this.pot = potSize;
   }
 }

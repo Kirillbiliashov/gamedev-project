@@ -11,9 +11,9 @@ public final class GameSession {
   private final static Player[] players = new Player[PLAYERS_SEATED];
   private int bbIdx;
   private int handsPlayed;
-  private final String[] ROUNDS = { "Flop", "Turn", "River" };
+  private final String[] ROUNDS = {"Preflop", "Flop", "Turn", "River" };
   private final RoundHandler roundHandler = new RoundHandler(players);
-  private WinnersHandler winnersHandler;
+  private final WinnersHandler winnersHandler = new WinnersHandler(players);
 
   public void start(final int yourBalance, final String nickname) {
     if (handsPlayed == 0) {
@@ -56,10 +56,8 @@ public final class GameSession {
   private void assignPositions() {
     final int sbIdx = handsPlayed == 1 ? Helpers.randomInRange(0, PLAYERS_SEATED - 1) : bbIdx;
     bbIdx = sbIdx == PLAYERS_SEATED - 1 ? 0 : sbIdx + 1;
-    final Player sbPlayer = players[sbIdx];
-    sbPlayer.setSB();
-    final Player bbPlayer = players[bbIdx];
-    bbPlayer.setBB();
+    players[sbIdx].setSB();
+    players[bbIdx].setBB();
     roundHandler.setBBPosition(bbIdx);
   }
 
@@ -118,24 +116,27 @@ public final class GameSession {
     return players[0].getBalance();
   }
 
-  public void newGame() {
-    handsPlayed++;
+  private void handOutCards() {
     cards = Cards.getAll();
     tableCards = new ArrayList<>();
     Cards.shuffle(cards);
     dealHands();
+  }
+
+  public void newGame() {
+    handsPlayed++;
+    handOutCards();
     assignPositions();
-    roundHandler.handle();
     for (int i = 0; i < ROUNDS.length; i++) {
+     roundHandler.handle();     
       Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
       System.out.print(ROUNDS[i] + ": ");
       InfoLogger.presentTableCards();
       InfoLogger.printCombination();
-     roundHandler.handle();
     }
     InfoLogger.presentCombinations();
-    winnersHandler = new WinnersHandler(players, roundHandler.getPot());
+    winnersHandler.setPotSize(roundHandler.getPot());
     winnersHandler.handle();
     resetGameData();
     endGame();
