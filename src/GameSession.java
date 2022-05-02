@@ -112,9 +112,6 @@ public final class GameSession {
     roundHandler.resetPotSize();
     newGame();
   }
-  public int getUserBalance() {
-    return players[0].getBalance();
-  }
 
   private void handOutCards() {
     cards = Cards.getAll();
@@ -127,11 +124,12 @@ public final class GameSession {
     handsPlayed++;
     handOutCards();
     assignPositions();
+    roundHandler.setPreflop();
     for (int i = 0; i < ROUNDS.length; i++) {
-     roundHandler.handle();     
+      System.out.print(ROUNDS[i] + ": ");      
+      roundHandler.handle();
       Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
-      System.out.print(ROUNDS[i] + ": ");
       InfoLogger.presentTableCards();
       InfoLogger.printCombination();
     }
