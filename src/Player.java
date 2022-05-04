@@ -10,7 +10,7 @@ public final class Player {
   private boolean isSB = false;
   private boolean didFold = false;
   private boolean isResolved = false;
-  private final int[] moneyInPot = new int[4];
+  private final int[] moneyInPot = new int[GameSession.ROUNDS_LENGTH];
   private Combination combination = Combination.HIGH_CARD;
 
   public Player(final int balance, final String nickname) {

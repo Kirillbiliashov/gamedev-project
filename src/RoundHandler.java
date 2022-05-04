@@ -54,9 +54,11 @@ public class RoundHandler extends Handler {
   }
 
   private int getRandomDecisionNum(final Player player) {
+    final boolean canCheck = player.canCheck(currRaiseSum, isPreflop);
+    final int RANGE_LENGTH = player.canCheck(currRaiseSum, isPreflop) ? 12 : 10;
     final int handStrength = player.getCombination().ordinal();
-    final int MIN_RANDOM_NUMBER = player.canCheck(currRaiseSum, isPreflop) ? 18 - handStrength : handStrength;
-    final int MAX_RANDOM_NUMBER = player.canCheck(currRaiseSum, isPreflop) ? 30 - handStrength : 10 + handStrength;
+    final int MIN_RANDOM_NUMBER = canCheck ? GameSession.MAX_CHECK_NUM - RANGE_LENGTH - handStrength : handStrength;
+    final int MAX_RANDOM_NUMBER = canCheck ? GameSession.MAX_CHECK_NUM - handStrength : RANGE_LENGTH + handStrength;
     return Helpers.randomInRange(MIN_RANDOM_NUMBER, MAX_RANDOM_NUMBER);
   }
 

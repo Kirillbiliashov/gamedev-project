@@ -6,12 +6,17 @@ public final class GameSession {
   public static final int MAX_BALANCE = 25000;
   public static final int BB_SIZE = 100;
   public static final int SB_SIZE = 50;
+  public static final int MAX_FOLD_NUM = 4;
+  public static final int MAX_CALL_NUM = 7;
+  public static final int MAX_RAISE_NUM = 20;
+  public static final int MAX_CHECK_NUM = 30;
   private List<Card> cards;
   private static List<Card> tableCards;
   private final static Player[] players = new Player[PLAYERS_SEATED];
   private int bbIdx;
   private int handsPlayed;
-  private final String[] ROUNDS = {"Preflop", "Flop", "Turn", "River" };
+  private static final String[] ROUNDS = {"Preflop", "Flop", "Turn", "River" };
+  public static final int ROUNDS_LENGTH = ROUNDS.length;
   private final RoundHandler roundHandler = new RoundHandler(players);
   private final WinnersHandler winnersHandler = new WinnersHandler(players);
 
