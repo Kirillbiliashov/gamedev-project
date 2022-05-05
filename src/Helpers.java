@@ -16,8 +16,7 @@ public final class Helpers {
     int equalNums = 1;
     while (equalNums < count) {
       if (++idx == nums.length) return false;
-      if (nums[idx] == nums[idx - 1]) equalNums++;
-      else equalNums = 1;
+      equalNums = nums[idx] == nums[idx - 1] ? equalNums + 1 : 1;
     }
     return true;
   }

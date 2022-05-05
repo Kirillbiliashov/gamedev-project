@@ -8,7 +8,7 @@ public class WinnersHandler extends Handler {
   }
 
   public void handle() {
-    final List<Player> unresolvedPlayers = Arrays.asList(players).stream().filter(Player::isUnResolved).toList();
+    final List<Player> unresolvedPlayers = Arrays.asList(players).stream().filter(Player::isUnresolved).toList();
     final List<Player> activeUnresolvedPlayers = unresolvedPlayers.stream().filter(Player::isActive).toList();
     final int strongestHand = getStrongestHand(activeUnresolvedPlayers);
     final List<Player> winners = getWinners(activeUnresolvedPlayers, strongestHand);
@@ -17,7 +17,7 @@ public class WinnersHandler extends Handler {
       final int winnerMoney = winner.getMoneyInPot();
       final List<Player> loserPlayers = getLoserPlayers(unresolvedPlayers, winners, winnerMoney);
       final int lostAmount = getLostAmount(loserPlayers);
-      final int activePlayersInPot = getActivePlayersInPotSize(unresolvedPlayers, winnerMoney);
+      final int activePlayersInPot = getActivePlayersInPotAmount(unresolvedPlayers, winnerMoney);
       final int winSum = (winnerMoney - prevAllInSum) * activePlayersInPot;
       allocWinSumToWinners(winners, winSum + lostAmount);
       if (pot == 0) return;
@@ -46,7 +46,7 @@ public class WinnersHandler extends Handler {
     return players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact) - prevAllInSum * players.size();
   }
 
-  private int getActivePlayersInPotSize(final List<Player> players, final int winnerMoney) {
+  private int getActivePlayersInPotAmount(final List<Player> players, final int winnerMoney) {
     return players.stream().filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
   }
 

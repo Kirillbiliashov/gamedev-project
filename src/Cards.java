@@ -14,8 +14,9 @@ public final class Cards {
 
   public static void shuffle(final List<Card> cards) {
     final int ITERATIONS = 1000;
+    final int size = cards.size();
     for (int i = 0; i < ITERATIONS; i++) {
-      final int randomIdx = Helpers.randomInRange(0, cards.size() - 1);
+      final int randomIdx = Helpers.randomInRange(0, size - 1);
       final Card card = cards.remove(randomIdx);
       cards.add(card);
     }

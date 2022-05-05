@@ -10,12 +10,11 @@ public final class GameSession {
   public static final int MAX_CALL_NUM = 7;
   public static final int MAX_RAISE_NUM = 20;
   public static final int MAX_CHECK_NUM = 30;
-  private List<Card> cards;
+  private List<Card> deck;
   private static List<Card> tableCards;
   private final static Player[] players = new Player[PLAYERS_SEATED];
-  private int bbIdx;
   private int handsPlayed;
-  private static final String[] ROUNDS = {"Preflop", "Flop", "Turn", "River" };
+  private static final String[] ROUNDS = { "Preflop", "Flop", "Turn", "River" };
   public static final int ROUNDS_LENGTH = ROUNDS.length;
   private final RoundHandler roundHandler = new RoundHandler(players);
   private final WinnersHandler winnersHandler = new WinnersHandler(players);
@@ -25,8 +24,7 @@ public final class GameSession {
       for (int i = 0; i < PLAYERS_SEATED; i++) {
         final boolean isUser = i == 0;
         final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE);
-        final Player player = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
-        players[i] = player;
+        players[i] = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
       }
     }
     newGame();
@@ -50,20 +48,16 @@ public final class GameSession {
     public static void presentCombinations() {
       for (final Player player : players) {
         if (player.isActive()) {
-          final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
-          System.out.println(player.getNickname() + " has got " + handDescription(player.getHand()) +
-              " (" + combination.toLowerCase() + ")");
+          System.out.print(player.getNickname() + " has got ");
+          printHandDescription(player);
         }
       }
     }
-  }
-
-  private void assignPositions() {
-    final int sbIdx = handsPlayed == 1 ? Helpers.randomInRange(0, PLAYERS_SEATED - 1) : bbIdx;
-    bbIdx = sbIdx == PLAYERS_SEATED - 1 ? 0 : sbIdx + 1;
-    players[sbIdx].setSB();
-    players[bbIdx].setBB();
-    roundHandler.setBBPosition(bbIdx);
+    private static void printHandDescription(final Player player) {
+      final List<Card> hand = player.getHand();
+      final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
+      System.out.println(hand.get(0).toString() + " and " + hand.get(1) +  " (" + combination + ")");
+    }
   }
 
   private void assignCombinations() {
@@ -81,21 +75,18 @@ public final class GameSession {
     }
   }
 
-  private static String handDescription(final List<Card> cards) {
-    return cards.get(0).toString() + " and " + cards.get(1);
-  }
-
   private void resetGameData() {
     for (final Player player : players) player.resetGameData();
   }
 
   private void dealHands() {
+    final int CARDS_TO_DEAL = 2;
     for (int i = 0; i < PLAYERS_SEATED; i++) {
       final boolean isUser = i == 0;
-      players[i].dealHand(cards);
+      players[i].setHand(Cards.deal(this.deck, CARDS_TO_DEAL));
       if (isUser) {
-        final List<Card> hand = players[i].getHand();
-        System.out.println(players[i].getNickname() + ", your hand is " + handDescription(hand));
+        System.out.println(players[i].getNickname() + ", your hand is ");
+        InfoLogger.printHandDescription(players[i]);
       }
     }
   }
@@ -119,21 +110,21 @@ public final class GameSession {
   }
 
   private void handOutCards() {
-    cards = Cards.getAll();
+    this.deck = Cards.getAll();
     tableCards = new ArrayList<>();
-    Cards.shuffle(cards);
+    Cards.shuffle(this.deck);
     dealHands();
   }
 
   public void newGame() {
     handsPlayed++;
     handOutCards();
-    assignPositions();
+    roundHandler.assignPositions(handsPlayed);
     roundHandler.setPreflop();
     for (int i = 0; i < ROUNDS.length; i++) {
-      System.out.print(ROUNDS[i] + ": ");      
+      System.out.print(ROUNDS[i] + ": ");
       roundHandler.handle();
-      Helpers.transport(cards, tableCards, i == 0 ? 3 : 1);
+      Helpers.transport(this.deck, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
       InfoLogger.presentTableCards();
       InfoLogger.printCombination();

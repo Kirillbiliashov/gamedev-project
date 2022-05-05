@@ -43,7 +43,8 @@ public enum Combination {
     public boolean check(final List<Card> cards) {
       final int CARDS_REQUIRED_FOR_STRAIGHT = 5;
       final int[] rankValues = getSortedValues(cards, Rank.class);
-      for (int i = 0; i < cards.size(); i++) {
+      final int size = cards.size();
+      for (int i = 0; i < size; i++) {
         rankValues[i] -= i;
       }
       return Helpers.hasEqualNumbers(rankValues, CARDS_REQUIRED_FOR_STRAIGHT);
@@ -65,13 +66,12 @@ public enum Combination {
       final int[] rankValues = getSortedValues(cards, Rank.class);
       final int threeOfKindRankVal;
       for (int i = 0; i < rankValues.length - HIGHER_COMBINATION_CARDS_REQUIRED + 1; i++) {
-        int[] threeOfKindSubArr = Arrays.copyOfRange(rankValues, i, i + 3);
+        final int[] threeOfKindSubArr = Arrays.copyOfRange(rankValues, i, i + 3);
         if (Helpers.hasEqualNumbers(threeOfKindSubArr, 3)) {
           threeOfKindRankVal = rankValues[i];
           for (int m = 0; m < rankValues.length - LOWER_COMBINATION_CARDS_REQUIRED + 1; m++) {
-            int[] pairSubArr = Arrays.copyOfRange(rankValues, m, m + LOWER_COMBINATION_CARDS_REQUIRED);
-            if (Helpers.hasEqualNumbers(pairSubArr, 2) && rankValues[m] != threeOfKindRankVal)
-              return true;
+            final int[] pairSubArr = Arrays.copyOfRange(rankValues, m, m + LOWER_COMBINATION_CARDS_REQUIRED);
+            if (Helpers.hasEqualNumbers(pairSubArr, 2) && rankValues[m] != threeOfKindRankVal) return true;
           }
           return false;
         }
@@ -98,11 +98,9 @@ public enum Combination {
     public boolean check(final List<Card> cards) {
       final int maxValue = Rank.ACE.ordinal();
       final int lastIdx = cards.size() - 1;
-      if (STRAIGHT.check(cards) && FLUSH.check(cards)) {
-        final int cardValue = cards.get(lastIdx).getRank().ordinal();
-        return cardValue == maxValue;
-      }
-      return false;
+      final boolean isStraightFlush = STRAIGHT.check(cards) && FLUSH.check(cards);
+      final int lastCardValue = cards.get(lastIdx).getRank().ordinal();
+      return isStraightFlush && lastCardValue == maxValue;
     }
   };
 

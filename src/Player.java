@@ -7,7 +7,6 @@ public final class Player {
   private int initialBalance;
   private List<Card> hand;
   private boolean isBB = false;
-  private boolean isSB = false;
   private boolean didFold = false;
   private boolean isResolved = false;
   private final int[] moneyInPot = new int[GameSession.ROUNDS_LENGTH];
@@ -19,8 +18,8 @@ public final class Player {
     this.nickname = nickname;
   }
 
-  public void dealHand(final List<Card> cards) {
-    hand = Cards.deal(cards, 2);
+  public void setHand(final List<Card> hand) {
+    this.hand = hand;
   }
 
   public boolean canCheck(final int currRaiseSum, final boolean isPreflop) {
@@ -37,9 +36,9 @@ public final class Player {
 
   public int getMoneyInPot() {
     int potMoneySum = 0;
-    for (final int roundMoney: moneyInPot) potMoneySum += roundMoney;
+    for (final int roundMoney : moneyInPot) potMoneySum += roundMoney;
     return potMoneySum;
-    
+
   }
 
   public int getRoundMoneyInPot() {
@@ -62,24 +61,23 @@ public final class Player {
     return this.isBB;
   }
 
-  public boolean isUnResolved() {
+  public boolean isUnresolved() {
     return !this.isResolved;
   }
 
   public void setBB() {
+    if (!this.isBB) {
     this.isBB = true;
     this.balance -= GameSession.BB_SIZE;
-    this.addRoundMoney(GameSession.BB_SIZE);
+    moneyInPot[roundIdx] += GameSession.BB_SIZE;   
+    }
   }
 
   public void setSB() {
-    this.isSB = true;
-    this.balance -= GameSession.SB_SIZE;
-    this.addRoundMoney(GameSession.SB_SIZE);
-  }
-
-  private void addRoundMoney(final int sum) {
-    moneyInPot[roundIdx] += sum;
+    if (!this.isBB) {
+      this.balance -= GameSession.SB_SIZE;
+      moneyInPot[roundIdx] += GameSession.SB_SIZE;
+    }
   }
 
   public void setCombination(final Combination combination) {
@@ -115,15 +113,15 @@ public final class Player {
   public int raiseFixedSum(final int raiseSum) {
     final int delta = raiseSum - this.getRoundMoneyInPot();
     balance -= delta;
-    this.addRoundMoney(delta);
+    this.moneyInPot[roundIdx] += delta;
     System.out.println(this.nickname + " raised " + (balance == 0 ? " all in" : "to " + raiseSum) + ", balance: " + this.balance);
     return raiseSum;
   }
 
   public int call(final int currRaiseSum) {
-    int callSum = Math.min(this.balance, currRaiseSum > 0 ? currRaiseSum - this.getRoundMoneyInPot() : GameSession.BB_SIZE);
+    final int callSum = Math.min(this.balance, currRaiseSum > 0 ? currRaiseSum - this.getRoundMoneyInPot() : GameSession.BB_SIZE);
     balance -= callSum;
-    this.addRoundMoney(callSum);
+    this.moneyInPot[roundIdx] += callSum;
     System.out.println("Player " + this.nickname + " called " + callSum + ", balance: " + this.balance);
     return callSum;
   }
@@ -132,6 +130,7 @@ public final class Player {
     this.didFold = true;
     System.out.println("Player " + this.nickname + " folded, balance: " + this.balance);
   }
+
   public void check() {
     System.out.println("Player " + this.nickname + (this.isBB ? " (big blind) " : " ") + "checked, balance: " + this.balance);
   }
@@ -140,11 +139,10 @@ public final class Player {
     final int delta = this.balance - this.initialBalance;
     if (delta > 0) System.out.println(this.nickname + " won " + delta + ", new balance: " + this.balance);
     this.isBB = false;
-    this.isSB = false;
     this.isResolved = false;
     this.initialBalance = this.balance;
     this.didFold = this.initialBalance == 0;
-    for (int i = 0; i < moneyInPot.length; i++) moneyInPot[i] = 0;
+    for (int i = 0; i < moneyInPot.length; i++) this.moneyInPot[i] = 0;
     roundIdx = 0;
   }
 }

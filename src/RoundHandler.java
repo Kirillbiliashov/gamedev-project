@@ -26,8 +26,8 @@ public class RoundHandler extends Handler {
   }
 
   public void handle() {
-    int currIdx = bbIdx == GameSession.PLAYERS_SEATED - 1 ? 0 : bbIdx + 1;
-    while (++playersPlayed < GameSession.PLAYERS_SEATED) {
+    int currIdx = this.bbIdx == GameSession.PLAYERS_SEATED - 1 ? 0 : this.bbIdx + 1;
+    while (++this.playersPlayed < GameSession.PLAYERS_SEATED) {
       final Player player = players[currIdx];
       final int balance = player.getBalance();
       if (player.isActive()) {
@@ -43,9 +43,17 @@ public class RoundHandler extends Handler {
     resetRoundData();
   }
 
+  public void assignPositions(final int handsPlayed) {
+    final int sbIdx = handsPlayed == 1 ? Helpers.randomInRange(0, GameSession.PLAYERS_SEATED - 1) : this.bbIdx;
+    this.bbIdx = sbIdx == GameSession.PLAYERS_SEATED - 1 ? 0 : sbIdx + 1;
+    players[sbIdx].setSB();
+    players[bbIdx].setBB();
+  }
+
   private void handlePlayerAction(final Player player) {
-    final int randomDecisionNum = getRandomDecisionNum(player);
-    for (final Action action : actions.keySet()) {
+    final int randomDecisionNum = this.getRandomDecisionNum(player);
+    final Set<Action> actionsKeySet = this.actions.keySet();
+    for (final Action action : actionsKeySet) {
       if (action.getRange().contains(randomDecisionNum)) {
         actions.get(action).accept(player);
         break;
@@ -55,7 +63,7 @@ public class RoundHandler extends Handler {
 
   private int getRandomDecisionNum(final Player player) {
     final boolean canCheck = player.canCheck(currRaiseSum, isPreflop);
-    final int RANGE_LENGTH = player.canCheck(currRaiseSum, isPreflop) ? 12 : 10;
+    final int RANGE_LENGTH = canCheck ? 12 : 10;
     final int handStrength = player.getCombination().ordinal();
     final int MIN_RANDOM_NUMBER = canCheck ? GameSession.MAX_CHECK_NUM - RANGE_LENGTH - handStrength : handStrength;
     final int MAX_RANDOM_NUMBER = canCheck ? GameSession.MAX_CHECK_NUM - handStrength : RANGE_LENGTH + handStrength;
@@ -75,22 +83,19 @@ public class RoundHandler extends Handler {
   private Action acceptActionInput(final Player player) {
     final Scanner input = new Scanner(System.in);
     final int balance = player.getBalance();
-    Action userAction = player.canCheck(currRaiseSum, isPreflop) ? Action.CHECK : Action.CALL;
+    final boolean canCheck = player.canCheck(currRaiseSum, isPreflop);
     final Action[] actionsArr = Action.values();
     try {
       System.out.print("Your balance is " + balance + ". Enter " + (balance > currRaiseSum ? "Raise" : "") +
-          (player.canCheck(currRaiseSum, isPreflop) ? " or Check: " : ", Call, or Fold:  "));
+          (canCheck ? " or Check: " : ", Call, or Fold:  "));
       final String inputStr = input.nextLine().substring(0, 2).toUpperCase();
       for (final Action action : actionsArr) {
-        if (action.toString().startsWith(inputStr)) {
-          userAction = action;
-          break;
-        }
+        if (action.toString().startsWith(inputStr)) return action;
       }
     } catch (Exception e) {
       System.out.println("Error message: " + e.getMessage());
     }
-    return userAction;
+    return canCheck ? Action.CHECK : Action.CALL;
   }
 
   private void handleRaiseAction(final Player player) {
@@ -98,8 +103,7 @@ public class RoundHandler extends Handler {
     final int prevRaiseSum = player.getRoundMoneyInPot();
     final int newRaiseSum;
     if (idx == 0) {
-      int raiseSum = acceptRaiseSumInput();
-      raiseSum = Math.min(prevRaiseSum + player.getBalance(), raiseSum);
+      final int raiseSum = Math.min(prevRaiseSum + player.getBalance(), acceptRaiseSumInput());
       newRaiseSum = player.raiseFixedSum(raiseSum);
     } else newRaiseSum = player.raise(currRaiseSum);
     pot += newRaiseSum - prevRaiseSum;
@@ -124,9 +128,6 @@ public class RoundHandler extends Handler {
     this.currRaiseSum = 0;
   }
 
-  public void setBBPosition(final int bbIdx) {
-    this.bbIdx = bbIdx;
-  }
   public void setPreflop() {
     this.isPreflop = true;
   }
