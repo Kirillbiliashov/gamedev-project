@@ -18,7 +18,7 @@ public class WinnersHandler extends Handler {
       final List<Player> loserPlayers = getLoserPlayers(unresolvedPlayers, winners, winnerMoney);
       final int lostAmount = getLostAmount(loserPlayers);
       final int activePlayersInPot = getActivePlayersInPotAmount(unresolvedPlayers, winnerMoney);
-      final int winSum = (winnerMoney - prevAllInSum) * activePlayersInPot;
+      final int winSum = (winnerMoney - this.prevAllInSum) * activePlayersInPot;
       allocWinSumToWinners(winners, winSum + lostAmount);
       if (this.pot == 0) return;
       for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
@@ -43,7 +43,7 @@ public class WinnersHandler extends Handler {
   }
 
   private int getLostAmount(final List<Player> players) {
-    return players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact) - prevAllInSum * players.size();
+    return players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact) - this.prevAllInSum * players.size();
   }
 
   private int getActivePlayersInPotAmount(final List<Player> players, final int winnerMoney) {

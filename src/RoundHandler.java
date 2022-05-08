@@ -11,10 +11,10 @@ public class RoundHandler extends Handler {
   public RoundHandler(final Player[] players) {
     super(players);
     this.pot = GameSession.BB_SIZE + GameSession.SB_SIZE;
-    actions.put(Action.FOLD, Player::fold);
-    actions.put(Action.CALL, (player) -> pot += player.putMoneyInPot(currRaiseSum, Action.CALL));
-    actions.put(Action.RAISE, (player) -> handleRaiseAction(player));
-    actions.put(Action.CHECK, Player::check);
+    this.actions.put(Action.FOLD, Player::fold);
+    this.actions.put(Action.CALL, (player) -> this.pot += player.putMoneyInPot(this.currRaiseSum, Action.CALL));
+    this.actions.put(Action.RAISE, (player) -> handleRaiseAction(player));
+    this.actions.put(Action.CHECK, Player::check);
   }
 
   public int getPot() {
@@ -47,7 +47,7 @@ public class RoundHandler extends Handler {
     final int sbIdx = handsPlayed == 1 ? Helpers.randomInRange(0, GameSession.PLAYERS_SEATED - 1) : this.bbIdx;
     this.bbIdx = sbIdx == GameSession.PLAYERS_SEATED - 1 ? 0 : sbIdx + 1;
     players[sbIdx].setSB();
-    players[bbIdx].setBB();
+    players[this.bbIdx].setBB();
   }
 
   private void handlePlayerAction(final Player player) {
@@ -55,14 +55,14 @@ public class RoundHandler extends Handler {
     final Set<Action> actionsKeySet = this.actions.keySet();
     for (final Action action : actionsKeySet) {
       if (action.getRange().contains(randomDecisionNum)) {
-        actions.get(action).accept(player);
+        this.actions.get(action).accept(player);
         break;
       }
     }
   }
 
   private int getRandomDecisionNum(final Player player) {
-    final boolean canCheck = player.canCheck(currRaiseSum, isPreflop);
+    final boolean canCheck = player.canCheck(this.currRaiseSum, this.isPreflop);
     final int RANGE_LENGTH = canCheck ? 12 : 10;
     final int handStrength = player.getCombination().ordinal();
     final int MIN_RANDOM_NUMBER = canCheck ? GameSession.MAX_CHECK_NUM - RANGE_LENGTH - handStrength : handStrength;
@@ -72,9 +72,10 @@ public class RoundHandler extends Handler {
 
   private void makeUserTurn(final Player player) {
     final Action userAction = acceptActionInput(player);
-    for (final Action action : actions.keySet()) {
+    final Set<Action> keySet = this.actions.keySet();
+    for (final Action action : keySet) {
       if (action == userAction) {
-        actions.get(action).accept(player);
+        this.actions.get(action).accept(player);
         break;
       }
     }
@@ -83,10 +84,10 @@ public class RoundHandler extends Handler {
   private Action acceptActionInput(final Player player) {
     final Scanner input = new Scanner(System.in);
     final int balance = player.getBalance();
-    final boolean canCheck = player.canCheck(currRaiseSum, isPreflop);
+    final boolean canCheck = player.canCheck(this.currRaiseSum, this.isPreflop);
     final Action[] actionsArr = Action.values();
     try {
-      System.out.print("Your balance is " + balance + ". Enter " + (balance > currRaiseSum ? "Raise" : "") +
+      System.out.print("Your balance is " + balance + ". Enter " + (balance > this.currRaiseSum ? "Raise" : "") +
           (canCheck ? " or Check: " : ", Call, or Fold:  "));
       final String inputStr = input.nextLine().substring(0, 2).toUpperCase();
       for (final Action action : actionsArr) {
@@ -101,7 +102,7 @@ public class RoundHandler extends Handler {
   private void handleRaiseAction(final Player player) {
     final int idx = Arrays.asList(players).indexOf(player);
     final int balance = player.getBalance();
-    if (currRaiseSum > balance) pot += player.putMoneyInPot(currRaiseSum, Action.CALL);
+    if (this.currRaiseSum > balance) this.pot += player.putMoneyInPot(this.currRaiseSum, Action.CALL);
     else {
       final int raiseSum;
       if (idx == 0) raiseSum = acceptRaiseSumInput();
@@ -110,11 +111,11 @@ public class RoundHandler extends Handler {
         final int MIN_BB_SIZE_RAISE = 2;
         final int randomRaiseSum = Helpers.randomInRange(GameSession.BB_SIZE * MIN_BB_SIZE_RAISE,
             GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
-        raiseSum = randomRaiseSum - randomRaiseSum % GameSession.SB_SIZE + currRaiseSum;
+        raiseSum = randomRaiseSum - randomRaiseSum % GameSession.SB_SIZE + this.currRaiseSum;
       }
-      pot += player.putMoneyInPot(raiseSum, Action.RAISE);
-      currRaiseSum = raiseSum;
-      playersPlayed = 1;
+      this.pot += player.putMoneyInPot(raiseSum, Action.RAISE);
+      this.currRaiseSum = raiseSum;
+      this.playersPlayed = 1;
     }
   }
 
@@ -124,15 +125,15 @@ public class RoundHandler extends Handler {
     do {
       System.out.print("Enter raise sum: ");
       raiseSum = input.nextInt();
-    } while (raiseSum < currRaiseSum);
+    } while (raiseSum < this.currRaiseSum);
     return raiseSum;
   }
 
   private void resetRoundData() {
     for (final Player player : players) player.newRound();
     this.playersPlayed = 0;
-    if (isPreflop) isPreflop = false;
-    this.currRaiseSum = 0;
+    if (this.isPreflop) this.isPreflop = false;
+    this.currRaiseSum = 100;
   }
 
   public void setPreflop() {

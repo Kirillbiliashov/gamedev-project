@@ -20,7 +20,7 @@ public final class GameSession {
   private final WinnersHandler winnersHandler = new WinnersHandler(players);
 
   public void start(final int yourBalance, final String nickname) {
-    if (handsPlayed == 0) {
+    if (this.handsPlayed == 0) {
       for (int i = 0; i < PLAYERS_SEATED; i++) {
         final boolean isUser = i == 0;
         final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE);
@@ -94,7 +94,7 @@ public final class GameSession {
 
   private void endGame() {
     final Scanner input = new Scanner(System.in);
-    System.out.println("Hands played: " + handsPlayed);
+    System.out.println("Hands played: " + this.handsPlayed);
     char symbol;
     try {
       System.out.print("Enter Q if you want to quit the game or any other symbol otherwise: ");
@@ -122,11 +122,11 @@ public final class GameSession {
       System.out.println("Your balance is 0. Game Over!");
       return;
     }
-    handsPlayed++;
+    this.handsPlayed++;
     handOutCards();
     assignCombinations();
     InfoLogger.printUserCombination();
-    roundHandler.assignPositions(handsPlayed);
+    roundHandler.assignPositions(this.handsPlayed);
     roundHandler.setPreflop();
     System.out.println("Preflop: ");
     roundHandler.handle();
