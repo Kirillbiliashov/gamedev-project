@@ -10,6 +10,7 @@ public final class Player {
   private boolean isResolved = false;
   private Combination combination = Combination.HIGH_CARD;
   private int roundMoneyInPot;
+  private int moneyInPot;
 
   public Player(final int balance, final String nickname) {
     this.balance = balance;
@@ -33,16 +34,8 @@ public final class Player {
     return this.balance;
   }
 
-  public int getInitialBalance() {
-    return this.initialBalance;
-  }
-
   public int getMoneyInPot() {
-    return this.initialBalance - this.balance;
-  }
-
-  public int getRoundMoneyInPot() {
-    return this.roundMoneyInPot;
+    return this.moneyInPot;
   }
 
   public String getNickname() {
@@ -89,6 +82,7 @@ public final class Player {
   }
 
   public void newRound() {
+    this.moneyInPot += this.roundMoneyInPot;
     this.roundMoneyInPot = 0;
   }
 
@@ -100,9 +94,9 @@ public final class Player {
     final boolean isRaiseAction = action == Action.RAISE;
     if (action == Action.CALL || isRaiseAction) {
       final int diff = Math.min(this.balance, raiseSum - this.roundMoneyInPot);
-      balance -= diff;
+      this.balance -= diff;
       this.roundMoneyInPot += diff;
-      final String outputStr = isRaiseAction ? (" raised " + (balance == 0 ? " all in" : "to " + raiseSum))
+      final String outputStr = isRaiseAction ? (" raised " + (this.balance == 0 ? " all in" : "to " + raiseSum))
           : (" called " + diff);
       System.out.println(this.nickname + outputStr + ", balance: " + this.balance);
       return diff;
@@ -121,12 +115,13 @@ public final class Player {
 
   public void resetGameData() {
     final int delta = this.balance - this.initialBalance;
-    if (delta > 0)
-      System.out.println(this.nickname + " won " + delta + ", new balance: " + this.balance);
+    if (delta > 0) System.out.println(this.nickname + " won " + delta + ", new balance: " + this.balance);
     this.isBB = false;
     this.isResolved = false;
     this.initialBalance = this.balance;
     this.didFold = this.initialBalance == 0;
     this.combination = Combination.HIGH_CARD;
+    this.roundMoneyInPot = 0;
+    this.moneyInPot = 0;
   }
 }
