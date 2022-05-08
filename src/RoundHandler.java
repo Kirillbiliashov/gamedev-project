@@ -2,7 +2,7 @@ import java.util.*;
 import java.util.function.*;
 
 public class RoundHandler extends Handler {
-  private int currRaiseSum;
+  private int currRaiseSum = 100;
   private int playersPlayed;
   private final HashMap<Action, Consumer<Player>> actions = new HashMap<>(Action.values().length);
   private boolean isPreflop = true;
@@ -12,7 +12,7 @@ public class RoundHandler extends Handler {
     super(players);
     this.pot = GameSession.BB_SIZE + GameSession.SB_SIZE;
     actions.put(Action.FOLD, Player::fold);
-    actions.put(Action.CALL, (player) -> this.pot += player.call(currRaiseSum));
+    actions.put(Action.CALL, (player) -> pot += player.putMoneyInPot(currRaiseSum, Action.CALL));
     actions.put(Action.RAISE, (player) -> handleRaiseAction(player));
     actions.put(Action.CHECK, Player::check);
   }
@@ -27,11 +27,11 @@ public class RoundHandler extends Handler {
 
   public void handle() {
     int currIdx = this.bbIdx == GameSession.PLAYERS_SEATED - 1 ? 0 : this.bbIdx + 1;
-    while (++this.playersPlayed < GameSession.PLAYERS_SEATED) {
+    while (this.playersPlayed++ < GameSession.PLAYERS_SEATED) {
       final Player player = players[currIdx];
       final int balance = player.getBalance();
       if (player.isActive()) {
-        if (balance == 0) System.out.println("Player " + player.getNickname() + " went all in");
+        if (balance == 0) System.out.println(player.getNickname() + " went all in");
         else {
           if (currIdx == 0) makeUserTurn(player);
           else handlePlayerAction(player);
@@ -100,15 +100,22 @@ public class RoundHandler extends Handler {
 
   private void handleRaiseAction(final Player player) {
     final int idx = Arrays.asList(players).indexOf(player);
-    final int prevRaiseSum = player.getRoundMoneyInPot();
-    final int newRaiseSum;
-    if (idx == 0) {
-      final int raiseSum = Math.min(prevRaiseSum + player.getBalance(), acceptRaiseSumInput());
-      newRaiseSum = player.raiseFixedSum(raiseSum);
-    } else newRaiseSum = player.raise(currRaiseSum);
-    pot += newRaiseSum - prevRaiseSum;
-    currRaiseSum = newRaiseSum;
-    playersPlayed = 0;
+    final int balance = player.getBalance();
+    if (currRaiseSum > balance) pot += player.putMoneyInPot(currRaiseSum, Action.CALL);
+    else {
+      final int raiseSum;
+      if (idx == 0) raiseSum = acceptRaiseSumInput();
+      else {
+        final int MAX_BB_SIZE_RAISE = 10;
+        final int MIN_BB_SIZE_RAISE = 2;
+        final int randomRaiseSum = Helpers.randomInRange(GameSession.BB_SIZE * MIN_BB_SIZE_RAISE,
+            GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
+        raiseSum = randomRaiseSum - randomRaiseSum % GameSession.SB_SIZE + currRaiseSum;
+      }
+      pot += player.putMoneyInPot(raiseSum, Action.RAISE);
+      currRaiseSum = raiseSum;
+      playersPlayed = 1;
+    }
   }
 
   private int acceptRaiseSumInput() {

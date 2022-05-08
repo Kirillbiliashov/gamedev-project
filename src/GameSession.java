@@ -14,7 +14,7 @@ public final class GameSession {
   private static List<Card> tableCards;
   private final static Player[] players = new Player[PLAYERS_SEATED];
   private int handsPlayed;
-  private static final String[] ROUNDS = { "Preflop", "Flop", "Turn", "River" };
+  private static final String[] ROUNDS = { "Flop", "Turn", "River" };
   public static final int ROUNDS_LENGTH = ROUNDS.length;
   private final RoundHandler roundHandler = new RoundHandler(players);
   private final WinnersHandler winnersHandler = new WinnersHandler(players);
@@ -35,14 +35,14 @@ public final class GameSession {
     private final static String NEW_SYMBOL = " ";
 
     public static void presentTableCards() {
-      for (final Card card : tableCards) System.out.print(card.toString() + " ");
+      for (final Card card : tableCards)
+        System.out.print(card.toString() + " ");
       System.out.println();
     }
 
-    public static void printCombination() {
-      final Player user = players[0];
-      final String combinationStr = Helpers.replaceSymbol(user.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
-      System.out.println("Your combination is " + combinationStr.toLowerCase());
+    private static void printCombination(final Combination combination) {
+      final String combinationStr = Helpers.replaceSymbol(combination.toString(), OLD_SYMBOL, NEW_SYMBOL);
+      System.out.println("(" + combinationStr.toLowerCase() + ")");
     }
 
     public static void presentCombinations() {
@@ -53,23 +53,31 @@ public final class GameSession {
         }
       }
     }
+
     private static void printHandDescription(final Player player) {
       final List<Card> hand = player.getHand();
-      final String combination = Helpers.replaceSymbol(player.getCombination().toString(), OLD_SYMBOL, NEW_SYMBOL);
-      System.out.println(hand.get(0).toString() + " and " + hand.get(1) +  " (" + combination + ")");
+      System.out.print(hand.get(0).toString() + " and " + hand.get(1).toString());
+      printCombination(player.getCombination());
+    }
+
+    private static void printUserCombination() {
+      System.out.print(players[0].getNickname() + ", your hand is ");
+      InfoLogger.printHandDescription(players[0]);
     }
   }
 
   private void assignCombinations() {
     for (final Player player : players) {
-      final List<Card> playerHand = new ArrayList<>(player.getHand());
-      playerHand.addAll(tableCards);
-      List<Combination> combinationsList = Arrays.asList(Combination.values());
-      Collections.reverse(combinationsList);
-      for (final Combination combination : combinationsList) {
-        if (combination.check(playerHand)) {
-          player.setCombination(combination);
-          break;
+      if (player.isActive()) {
+        final List<Card> playerHand = new ArrayList<>(player.getHand());
+        playerHand.addAll(tableCards);
+        List<Combination> combinationsList = Arrays.asList(Combination.values());
+        Collections.reverse(combinationsList);
+        for (final Combination combination : combinationsList) {
+          if (combination.check(playerHand)) {
+            player.setCombination(combination);
+            break;
+          }
         }
       }
     }
@@ -81,14 +89,7 @@ public final class GameSession {
 
   private void dealHands() {
     final int CARDS_TO_DEAL = 2;
-    for (int i = 0; i < PLAYERS_SEATED; i++) {
-      final boolean isUser = i == 0;
-      players[i].setHand(Cards.deal(this.deck, CARDS_TO_DEAL));
-      if (isUser) {
-        System.out.println(players[i].getNickname() + ", your hand is ");
-        InfoLogger.printHandDescription(players[i]);
-      }
-    }
+    for (int i = 0; i < PLAYERS_SEATED; i++) players[i].setHand(Cards.deal(this.deck, CARDS_TO_DEAL));
   }
 
   private void endGame() {
@@ -117,19 +118,28 @@ public final class GameSession {
   }
 
   public void newGame() {
+    if (players[0].getBalance() == 0) {
+      System.out.println("Your balance is 0. Game Over!");
+      return;
+    }
     handsPlayed++;
     handOutCards();
+    assignCombinations();
+    InfoLogger.printUserCombination();
     roundHandler.assignPositions(handsPlayed);
     roundHandler.setPreflop();
+    System.out.println("Preflop: ");
+    roundHandler.handle();
     for (int i = 0; i < ROUNDS.length; i++) {
-      System.out.print(ROUNDS[i] + ": ");
-      roundHandler.handle();
       Helpers.transport(this.deck, tableCards, i == 0 ? 3 : 1);
       assignCombinations();
+      System.out.print(ROUNDS[i] + ": ");      
       InfoLogger.presentTableCards();
-      InfoLogger.printCombination();
+      InfoLogger.printUserCombination();
+      roundHandler.handle();
     }
     InfoLogger.presentCombinations();
+    System.out.println("pot = (after rounds before winner handling) " + roundHandler.getPot());
     winnersHandler.setPotSize(roundHandler.getPot());
     winnersHandler.handle();
     resetGameData();
