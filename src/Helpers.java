@@ -24,8 +24,9 @@ public final class Helpers {
   public static String replaceSymbol(final String str, final String oldStr, final String newStr) {
     final StringBuilder sb = new StringBuilder(str);
     final int idx = sb.indexOf(oldStr);
+    if (idx == -1) return str;
     final String replaceStr = sb.replace(idx, idx + 1, newStr).toString();
-    return idx >= 0 ? replaceSymbol(replaceStr, oldStr, newStr) : str;
+    return replaceSymbol(replaceStr, oldStr, newStr);
   }
 
 }

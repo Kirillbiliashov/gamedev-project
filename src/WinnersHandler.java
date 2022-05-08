@@ -20,10 +20,10 @@ public class WinnersHandler extends Handler {
       final int activePlayersInPot = getActivePlayersInPotAmount(unresolvedPlayers, winnerMoney);
       final int winSum = (winnerMoney - prevAllInSum) * activePlayersInPot;
       allocWinSumToWinners(winners, winSum + lostAmount);
-      if (pot == 0) return;
+      if (this.pot == 0) return;
       for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
       winner.setResolved();
-      prevAllInSum = winnerMoney;
+      this.prevAllInSum = winnerMoney;
       handle();
     } else allocWinSumToWinners(winners, pot);
   }
@@ -53,7 +53,7 @@ public class WinnersHandler extends Handler {
   private void allocWinSumToWinners(final List<Player> winners, final int winSum) {
     final int winnersSize = winners.size();
     for (final Player winner : winners) winner.changeBalance(winSum / winnersSize);
-    pot -= winSum;
+    this.pot -= winSum;
   }
 
   public void setPotSize(final int potSize) {
