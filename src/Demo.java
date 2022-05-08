@@ -14,7 +14,6 @@ public final class Demo {
         balance = 10000;
       }
     } while (balance < GameSession.MIN_BALANCE || balance > GameSession.MAX_BALANCE);
-    final GameSession session = new GameSession();
-    session.start(balance, nickname);
+    new GameSession().start(balance, nickname);
   }
 }

@@ -49,7 +49,7 @@ public class RoundHandler extends Handler {
     players[sbIdx].setSB();
     players[this.bbIdx].setBB();
   }
-
+  
   private void handlePlayerAction(final Player player) {
     final int randomDecisionNum = this.getRandomDecisionNum(player);
     final Set<Action> actionsKeySet = this.actions.keySet();

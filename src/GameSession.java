@@ -28,7 +28,7 @@ public final class GameSession {
         players[i] = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
       }
     }
-    newGame();
+    this.newGame();
   }
 
   private class InfoLogger {
@@ -36,8 +36,7 @@ public final class GameSession {
     private final static String NEW_SYMBOL = " ";
 
     public static void presentTableCards() {
-      for (final Card card : tableCards)
-        System.out.print(card.toString() + " ");
+      for (final Card card : tableCards) System.out.print(card.toString() + " ");
       System.out.println();
     }
 
@@ -46,7 +45,7 @@ public final class GameSession {
       System.out.println("(" + combinationStr.toLowerCase() + ")");
     }
 
-    public static void presentCombinations() {
+    private static void presentCombinations() {
       for (final Player player : players) {
         if (player.isActive()) {
           System.out.print(player.getNickname() + " has got ");
@@ -68,12 +67,12 @@ public final class GameSession {
   }
 
   private void assignCombinations() {
+    List<Combination> combinationsList = Arrays.asList(Combination.values());
+    Collections.reverse(combinationsList);
     for (final Player player : players) {
       if (player.isActive()) {
         final List<Card> playerHand = new ArrayList<>(player.getHand());
         playerHand.addAll(tableCards);
-        List<Combination> combinationsList = Arrays.asList(Combination.values());
-        Collections.reverse(combinationsList);
         for (final Combination combination : combinationsList) {
           if (combination.check(playerHand)) {
             player.setCombination(combination);
@@ -86,6 +85,7 @@ public final class GameSession {
 
   private void resetGameData() {
     for (final Player player : players) player.resetGameData();
+    this.roundHandler.resetPotSize();
   }
 
   private void dealHands() {
@@ -94,6 +94,7 @@ public final class GameSession {
   }
 
   private void endGame() {
+    this.resetGameData();
     final Scanner input = new Scanner(System.in);
     System.out.println("Hands played: " + this.handsPlayed);
     char symbol;
@@ -107,42 +108,44 @@ public final class GameSession {
       System.out.println("Thank you for playing");
       return;
     }
-    roundHandler.resetPotSize();
-    newGame();
+    this.newGame();
   }
 
   private void handOutCards() {
     this.deck = Cards.getAll();
     tableCards = new ArrayList<>();
     Cards.shuffle(this.deck);
-    dealHands();
+    this.dealHands();
   }
 
-  public void newGame() {
+  private void newGame() {
     if (players[0].getBalance() == 0) {
       System.out.println("Your balance is 0. Game Over!");
       return;
     }
     this.handsPlayed++;
-    handOutCards();
-    assignCombinations();
+    this.handOutCards();
+    this.assignCombinations();
     InfoLogger.printUserCombination();
-    roundHandler.assignPositions(this.handsPlayed);
-    roundHandler.setPreflop();
+    this.roundHandler.assignPositions(this.handsPlayed);
+    this.roundHandler.setPreflop();
     System.out.println("Preflop: ");
-    roundHandler.handle();
+    this.roundHandler.handle();
+    this.performPostflopRounds();
+    InfoLogger.presentCombinations();
+    this.winnersHandler.setPotSize(roundHandler.getPot());
+    this.winnersHandler.handle();
+    this.endGame();
+  }
+
+  private void performPostflopRounds() {
     for (int i = 0; i < ROUNDS.length; i++) {
       Helpers.transport(this.deck, tableCards, i == 0 ? 3 : 1);
-      assignCombinations();
-      System.out.print(ROUNDS[i] + ": ");      
+      this.assignCombinations();
+      System.out.print(ROUNDS[i] + ": ");
       InfoLogger.presentTableCards();
       InfoLogger.printUserCombination();
-      roundHandler.handle();
+      this.roundHandler.handle();
     }
-    InfoLogger.presentCombinations();
-    winnersHandler.setPotSize(roundHandler.getPot());
-    winnersHandler.handle();
-    resetGameData();
-    endGame();
   }
 }
