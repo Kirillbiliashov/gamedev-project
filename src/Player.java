@@ -23,7 +23,7 @@ public final class Player {
   }
 
   public boolean canCheck(final int currRaiseSum, final boolean isPreflop) {
-    return currRaiseSum == 0 && (!isPreflop || this.isBB);
+    return currRaiseSum == 100 && (!isPreflop || this.isBB);
   }
 
   public boolean isActive() {
@@ -96,7 +96,7 @@ public final class Player {
       final int diff = Math.min(this.balance, raiseSum - this.roundMoneyInPot);
       this.balance -= diff;
       this.roundMoneyInPot += diff;
-      final String outputStr = isRaiseAction ? (" raised " + (this.balance == 0 ? " all in" : "to " + raiseSum))
+      final String outputStr = isRaiseAction ? (" raised to " + (raiseSum + (this.balance == 0 ? " (all in) " : "")))
           : (" called " + diff);
       System.out.println(this.nickname + outputStr + ", balance: " + this.balance);
       return diff;

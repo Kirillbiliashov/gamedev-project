@@ -5,6 +5,11 @@ public final class Helpers {
     return (int) Math.round(Math.random() * (end - start)) + start;
   }
 
+  public static int randomInRangeWithAccuracy(final int start, final int end, final int accuracy) {
+    final int randomNum = randomInRange(start, end);
+    return randomNum - randomNum % accuracy;
+  }
+
   public static <T> void transport(List<T> list1, List<T> list2, final int count) {
     for (int i = 0; i < count; i++) {
       list2.add(list1.remove(i));

@@ -87,8 +87,8 @@ public class RoundHandler extends Handler {
     final boolean canCheck = player.canCheck(this.currRaiseSum, this.isPreflop);
     final Action[] actionsArr = Action.values();
     try {
-      System.out.print("Your balance is " + balance + ". Enter " + (balance > this.currRaiseSum ? "Raise" : "") +
-          (canCheck ? " or Check: " : ", Call, or Fold:  "));
+      System.out.print("Your balance is " + balance + ". Enter " + (balance > this.currRaiseSum ? "Raise, " : "") +
+          (canCheck ? " or Check: " : " Call, or Fold:  "));
       final String inputStr = input.nextLine().substring(0, 2).toUpperCase();
       for (final Action action : actionsArr) {
         if (action.toString().startsWith(inputStr)) return action;
@@ -104,27 +104,27 @@ public class RoundHandler extends Handler {
     final int balance = player.getBalance();
     if (this.currRaiseSum > balance) this.pot += player.putMoneyInPot(this.currRaiseSum, Action.CALL);
     else {
-      final int raiseSum;
-      if (idx == 0) raiseSum = acceptRaiseSumInput();
+      if (idx == 0) this.currRaiseSum = acceptRaiseSumInput();
       else {
-        final int MAX_BB_SIZE_RAISE = 10;
-        final int MIN_BB_SIZE_RAISE = 2;
-        final int randomRaiseSum = Helpers.randomInRange(GameSession.BB_SIZE * MIN_BB_SIZE_RAISE,
-            GameSession.BB_SIZE * MAX_BB_SIZE_RAISE);
-        raiseSum = randomRaiseSum - randomRaiseSum % GameSession.SB_SIZE + this.currRaiseSum;
+        final int MAX_RAISE_FACTOR = 5;
+        this.currRaiseSum += Helpers.randomInRangeWithAccuracy(this.currRaiseSum, this.currRaiseSum * MAX_RAISE_FACTOR,
+            GameSession.SB_SIZE);
       }
-      this.pot += player.putMoneyInPot(raiseSum, Action.RAISE);
-      this.currRaiseSum = raiseSum;
+      this.pot += player.putMoneyInPot(this.currRaiseSum, Action.RAISE);
       this.playersPlayed = 1;
     }
   }
 
   private int acceptRaiseSumInput() {
     final Scanner input = new Scanner(System.in);
-    int raiseSum;
+    int raiseSum = 0;
     do {
-      System.out.print("Enter raise sum: ");
-      raiseSum = input.nextInt();
+      try {
+        System.out.print("Enter raise sum: ");
+        raiseSum = input.nextInt();
+      } catch (Exception e) {
+        raiseSum = this.currRaiseSum * 2;
+      }
     } while (raiseSum < this.currRaiseSum);
     return raiseSum;
   }

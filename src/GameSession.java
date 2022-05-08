@@ -21,9 +21,10 @@ public final class GameSession {
 
   public void start(final int yourBalance, final String nickname) {
     if (this.handsPlayed == 0) {
+      final int BALANCE_ACCURACY = 5;
       for (int i = 0; i < PLAYERS_SEATED; i++) {
         final boolean isUser = i == 0;
-        final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE);
+        final int playerBalance = Helpers.randomInRangeWithAccuracy(MIN_BALANCE, MAX_BALANCE, BALANCE_ACCURACY);
         players[i] = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
       }
     }
@@ -139,7 +140,6 @@ public final class GameSession {
       roundHandler.handle();
     }
     InfoLogger.presentCombinations();
-    System.out.println("pot = (after rounds before winner handling) " + roundHandler.getPot());
     winnersHandler.setPotSize(roundHandler.getPot());
     winnersHandler.handle();
     resetGameData();
