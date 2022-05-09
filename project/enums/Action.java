@@ -1,3 +1,8 @@
+package enums;
+
+import src.GameSession;
+import src.Range;
+
 public enum Action {
 
   FOLD(new Range(0, GameSession.MAX_FOLD_NUM)),

@@ -1,4 +1,8 @@
+package src;
+
 import java.util.*;
+
+import enums.Action;
 
 public final class Player {
   private final String nickname;

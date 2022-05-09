@@ -1,3 +1,5 @@
+package src;
+
 public final class Range {
   private int start;
   private int end;

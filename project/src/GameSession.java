@@ -1,4 +1,7 @@
+package src;
+
 import java.util.*;
+import staticClasses.*;
 
 public final class GameSession {
   public static final int PLAYERS_SEATED = 6;

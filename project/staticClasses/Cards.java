@@ -1,4 +1,8 @@
+package staticClasses;
+
 import java.util.*;
+import enums.*;
+import src.Card;
 
 public final class Cards {
 

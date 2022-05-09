@@ -1,3 +1,7 @@
+package src;
+
+import enums.*;
+
 public final class Card {
   private final Suit suit;
   private final Rank rank;
