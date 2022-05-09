@@ -55,6 +55,7 @@ public class RoundHandler extends Handler {
   }
   
   private void handlePlayerAction(final Player player) {
+    delay();
     final int randomDecisionNum = this.getRandomDecisionNum(player);
     final Set<Action> actionsKeySet = this.actions.keySet();
     for (final Action action : actionsKeySet) {
@@ -62,6 +63,17 @@ public class RoundHandler extends Handler {
         this.actions.get(action).accept(player);
         break;
       }
+    }
+  }
+
+  private void delay() {
+    final int MIN_DELAY_TIME = 1000;
+    final int MAX_DELAY_TIME = 3000;
+    final int randomSleepTime = Helpers.randomInRange(MIN_DELAY_TIME, MAX_DELAY_TIME);
+    try {
+      Thread.sleep(randomSleepTime);
+    } catch (Exception e) {
+      System.out.println(e.getMessage());
     }
   }
 
