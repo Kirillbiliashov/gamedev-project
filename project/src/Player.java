@@ -100,8 +100,8 @@ public final class Player {
       final int diff = Math.min(this.balance, raiseSum - this.roundMoneyInPot);
       this.balance -= diff;
       this.roundMoneyInPot += diff;
-      final String outputStr = isRaiseAction ? (" raised to " + (raiseSum + (this.balance == 0 ? " (all in) " : "")))
-          : (" called " + diff);
+      final String allInStr = this.balance == 0 ? " (all in) " : "";
+      final String outputStr = isRaiseAction ? " raised to " + allInStr : " called " + diff;
       System.out.println(this.nickname + outputStr + ", balance: " + this.balance);
       return diff;
     }
