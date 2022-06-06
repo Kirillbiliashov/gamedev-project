@@ -50,9 +50,7 @@ public enum Combination {
       final int CARDS_REQUIRED_FOR_STRAIGHT = 5;
       final int[] rankValues = getSortedValues(cards, Rank.class);
       final int size = cards.size();
-      for (int i = 0; i < size; i++) {
-        rankValues[i] -= i;
-      }
+      for (int i = 0; i < size; i++) rankValues[i] -= i;
       return Helpers.hasEqualNumbers(rankValues, CARDS_REQUIRED_FOR_STRAIGHT);
     }
   },

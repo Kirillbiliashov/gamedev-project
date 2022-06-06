@@ -35,8 +35,9 @@ public class RoundHandler extends Handler {
       final Player player = players[currIdx];
       final int balance = player.getBalance();
       if (player.isActive()) {
-        if (balance == 0) System.out.println(player.getNickname() + " went all in");
-        else {
+        if (balance == 0) {
+          System.out.println(player.getNickname() + " went all in");
+        } else {
           if (currIdx == 0) makeUserTurn(player);
           else handlePlayerAction(player);
         }
@@ -124,10 +125,12 @@ public class RoundHandler extends Handler {
   private void handleRaiseAction(final Player player) {
     final int idx = Arrays.asList(players).indexOf(player);
     final int balance = player.getBalance();
-    if (this.currRaiseSum > balance) this.pot += player.putMoneyInPot(this.currRaiseSum, Action.CALL);
-    else {
-      if (idx == 0) this.currRaiseSum = acceptRaiseSumInput();
-      else {
+    if (this.currRaiseSum > balance) {
+      this.pot += player.putMoneyInPot(this.currRaiseSum, Action.CALL);
+    } else {
+      if (idx == 0) {
+        this.currRaiseSum = acceptRaiseSumInput();
+      } else {
         final int MAX_RAISE_FACTOR = 5;
         this.currRaiseSum += Helpers.randomInRangeWithAccuracy(this.currRaiseSum, this.currRaiseSum * MAX_RAISE_FACTOR,
             GameSession.SB_SIZE);
