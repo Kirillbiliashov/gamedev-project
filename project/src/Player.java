@@ -96,16 +96,14 @@ public final class Player {
 
   public int putMoneyInPot(final int raiseSum, final Action action) {
     final boolean isRaiseAction = action == Action.RAISE;
-    if (action == Action.CALL || isRaiseAction) {
-      final int diff = Math.min(this.balance, raiseSum - this.roundMoneyInPot);
-      this.balance -= diff;
-      this.roundMoneyInPot += diff;
-      final String allInStr = this.balance == 0 ? " (all in) " : "";
-      final String outputStr = isRaiseAction ? " raised to " + allInStr : " called " + diff;
-      System.out.println(this.nickname + outputStr + ", balance: " + this.balance);
-      return diff;
-    }
-    return 0;
+    if (action != Action.CALL && !isRaiseAction) return 0;
+    final int diff = Math.min(this.balance, raiseSum - this.roundMoneyInPot);
+    this.balance -= diff;
+    this.roundMoneyInPot += diff;
+    final String allInStr = this.balance == 0 ? " (all in) " : "";
+    final String outputStr = isRaiseAction ? " raised to " + allInStr : " called " + diff;
+    System.out.println(this.nickname + outputStr + ", balance: " + this.balance);
+    return diff;
   }
 
   public void fold() {

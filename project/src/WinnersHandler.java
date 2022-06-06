@@ -15,19 +15,21 @@ public class WinnersHandler extends Handler {
     final int strongestHand = getStrongestHand(activeUnresolvedPlayers);
     final List<Player> winners = getWinners(activeUnresolvedPlayers, strongestHand);
     final Player winner = winners.get(0);
-    if (winner.getBalance() == 0) {
-      final int winnerMoney = winner.getMoneyInPot();
-      final List<Player> loserPlayers = getLoserPlayers(unresolvedPlayers, winners, winnerMoney);
-      final int lostAmount = getLostAmount(loserPlayers);
-      final int activePlayersInPot = getActivePlayersInPotAmount(unresolvedPlayers, winnerMoney);
-      final int winSum = (winnerMoney - this.prevAllInSum) * activePlayersInPot;
-      allocWinSumToWinners(winners, winSum + lostAmount);
-      if (this.pot == 0) return;
-      for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
-      winner.setResolved();
-      this.prevAllInSum = winnerMoney;
-      handle();
-    } else allocWinSumToWinners(winners, pot);
+    if (winner.getBalance() != 0) {
+      allocWinSumToWinners(winners, pot);
+      return;
+    }
+    final int winnerMoney = winner.getMoneyInPot();
+    final List<Player> loserPlayers = getLoserPlayers(unresolvedPlayers, winners, winnerMoney);
+    final int lostAmount = getLostAmount(loserPlayers);
+    final int activePlayersInPot = getActivePlayersInPotAmount(unresolvedPlayers, winnerMoney);
+    final int winSum = (winnerMoney - this.prevAllInSum) * activePlayersInPot;
+    allocWinSumToWinners(winners, winSum + lostAmount);
+    if (this.pot == 0) return;
+    for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
+    winner.setResolved();
+    this.prevAllInSum = winnerMoney;
+    handle();
   }
 
   private List<Player> getWinners(final List<Player> players, final int strongestHand) {
