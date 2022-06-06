@@ -21,7 +21,11 @@ public final class Card {
 
   @Override
   public String toString() {
+    final int ENUM_IDX_SHIFT = 2;
     final int rankValue = rank.ordinal();
-    return (rankValue < Rank.TEN.ordinal() ? rankValue + 2 : rank.toString().substring(0, 1)) + suit.getEmoji();
+    final String rankLetter = rank.toString().substring(0, 1);
+    final String rankNumber = Integer.toString(rankValue + ENUM_IDX_SHIFT);
+    final String cardSymbol = rankValue < Rank.TEN.ordinal() ? rankNumber : rankLetter;
+    return cardSymbol + suit.getEmoji();
   }
 }

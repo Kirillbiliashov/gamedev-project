@@ -1,6 +1,8 @@
 package src;
 
 import java.util.*;
+import java.util.function.ToIntFunction;
+
 import enums.*;
 import staticClasses.Helpers;
 
@@ -65,17 +67,22 @@ public enum Combination {
   FULL_HOUSE {
     @Override
     public boolean check(final List<Card> cards) {
+      final int[] rankValues = getSortedValues(cards, Rank.class);
+      final int length = rankValues.length;
       final int HIGHER_COMBINATION_CARDS_REQUIRED = 3;
       final int LOWER_COMBINATION_CARDS_REQUIRED = 2;
-      final int[] rankValues = getSortedValues(cards, Rank.class);
+      final int OUTER_ITERATION_LIMIT = length - HIGHER_COMBINATION_CARDS_REQUIRED + 1;
+      final int INNER_ITERATION_LIMIT = length - LOWER_COMBINATION_CARDS_REQUIRED + 1;
       final int threeOfKindRankVal;
-      for (int i = 0; i < rankValues.length - HIGHER_COMBINATION_CARDS_REQUIRED + 1; i++) {
+      for (int i = 0; i < OUTER_ITERATION_LIMIT; i++) {
         final int[] threeOfKindSubArr = Arrays.copyOfRange(rankValues, i, i + 3);
         if (Helpers.hasEqualNumbers(threeOfKindSubArr, 3)) {
           threeOfKindRankVal = rankValues[i];
-          for (int m = 0; m < rankValues.length - LOWER_COMBINATION_CARDS_REQUIRED + 1; m++) {
-            final int[] pairSubArr = Arrays.copyOfRange(rankValues, m, m + LOWER_COMBINATION_CARDS_REQUIRED);
-            if (Helpers.hasEqualNumbers(pairSubArr, 2) && rankValues[m] != threeOfKindRankVal) return true;
+          for (int m = 0; m < INNER_ITERATION_LIMIT; m++) {
+            final int UPPER_LIMIT = m + LOWER_COMBINATION_CARDS_REQUIRED;
+            final int[] pairSubArr = Arrays.copyOfRange(rankValues, m, UPPER_LIMIT);
+            final boolean isPair = Helpers.hasEqualNumbers(pairSubArr, 2);
+            if (isPair && rankValues[m] != threeOfKindRankVal) return true;
           }
           return false;
         }
@@ -111,9 +118,10 @@ public enum Combination {
   private static <T> int[] getSortedValues(final List<Card> cards, final Class<T> enumClass) {
     final String rankClassName = Rank.class.getName();
     final String className = enumClass.getName();
+    final boolean isRankClass = className.equals(rankClassName);
     return cards
         .stream()
-        .mapToInt(card -> className.equals(rankClassName) ? card.getRank().ordinal() : card.getSuit().ordinal())
+        .mapToInt(card -> isRankClass ? card.getRank().ordinal() : card.getSuit().ordinal())
         .sorted()
         .toArray();
   }

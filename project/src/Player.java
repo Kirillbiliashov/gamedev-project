@@ -114,7 +114,8 @@ public final class Player {
   }
 
   public void check() {
-    System.out.println(this.nickname + (this.isBB ? " (big blind) " : " ") + "checked, balance: " + this.balance);
+    final String bbStr = this.isBB ? " (big blind) " : " ";
+    System.out.println(this.nickname + bbStr + "checked, balance: " + this.balance);
   }
 
   public void resetGameData() {

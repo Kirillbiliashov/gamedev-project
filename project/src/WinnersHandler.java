@@ -45,11 +45,12 @@ public class WinnersHandler extends Handler {
   }
 
   private int getLostAmount(final List<Player> players) {
-    return players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact) - this.prevAllInSum * players.size();
+    final int totalLossAmount = players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact);
+    return totalLossAmount - this.prevAllInSum * players.size();
   }
 
   private int getActivePlayersInPotAmount(final List<Player> players, final int winnerMoney) {
-    return players.stream().filter(player -> player.getMoneyInPot() >= winnerMoney).toArray().length;
+    return players.stream().filter(pl -> pl.getMoneyInPot() >= winnerMoney).toArray().length;
   }
 
   private void allocWinSumToWinners(final List<Player> winners, final int winSum) {

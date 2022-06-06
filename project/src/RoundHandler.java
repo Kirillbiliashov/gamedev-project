@@ -40,7 +40,10 @@ public class RoundHandler extends Handler {
           if (currIdx == 0) makeUserTurn(player);
           else handlePlayerAction(player);
         }
-      } else System.out.println(player.getNickname() + (balance == 0 ? " sit out" : " folded"));
+      } else {
+        final String zeroBalanceStr = balance == 0 ? " sit out" : " folded";
+        System.out.println(player.getNickname() + zeroBalanceStr);
+      }
       if (++currIdx == GameSession.PLAYERS_SEATED) currIdx = 0;
     }
     System.out.println("Pot is " + this.pot);
@@ -81,8 +84,10 @@ public class RoundHandler extends Handler {
     final boolean canCheck = player.canCheck(this.currRaiseSum, this.isPreflop);
     final int RANGE_LENGTH = canCheck ? 12 : 10;
     final int handStrength = player.getCombination().ordinal();
-    final int MIN_RANDOM_NUMBER = canCheck ? GameSession.MAX_CHECK_NUM - RANGE_LENGTH - handStrength : handStrength;
-    final int MAX_RANDOM_NUMBER = canCheck ? GameSession.MAX_CHECK_NUM - handStrength : RANGE_LENGTH + handStrength;
+    final int MIN_CHECK_NUMBER = GameSession.MAX_CHECK_NUM - RANGE_LENGTH - handStrength;
+    final int MAX_CHECK_NUMBER = GameSession.MAX_CHECK_NUM - handStrength;
+    final int MIN_RANDOM_NUMBER = canCheck ? MIN_CHECK_NUMBER : handStrength;
+    final int MAX_RANDOM_NUMBER = canCheck ? MAX_CHECK_NUMBER : RANGE_LENGTH + handStrength;
     return Helpers.randomInRange(MIN_RANDOM_NUMBER, MAX_RANDOM_NUMBER);
   }
 
@@ -103,8 +108,9 @@ public class RoundHandler extends Handler {
     final boolean canCheck = player.canCheck(this.currRaiseSum, this.isPreflop);
     final Action[] actionsArr = Action.values();
     try {
-      System.out.print("Your balance is " + balance + ". Enter " + (balance > this.currRaiseSum ? "Raise, " : "") +
-          (canCheck ? " or Check: " : " Call, or Fold:  "));
+      final String raiseStr = balance > this.currRaiseSum ? "Raise, " : "";
+      final String cancCheckStr = canCheck ? " or Check: " : " Call, or Fold:  ";
+      System.out.print("Your balance is " + balance + ". Enter " + raiseStr + cancCheckStr);
       final String inputStr = input.nextLine().substring(0, 2).toUpperCase();
       for (final Action action : actionsArr) {
         if (action.toString().startsWith(inputStr)) return action;
