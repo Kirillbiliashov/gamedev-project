@@ -4,46 +4,70 @@ import java.util.*;
 
 public class WinnersHandler extends Handler {
   private int prevAllInSum;
+  private List<Player> winners;
+  private List<Player> unresolvedPlayers;
+  private List<Player> activeUnresolvedPlayers;
+  private int strongestHand;
+  private int winnerMoney;
 
   public WinnersHandler(final Player[] players) {
     super(players);
+    this.setFields();
   }
 
   public void handle() {
-    final List<Player> unresolvedPlayers = Arrays.asList(players).stream().filter(Player::isUnresolved).toList();
-    final List<Player> activeUnresolvedPlayers = unresolvedPlayers.stream().filter(Player::isActive).toList();
-    final int strongestHand = getStrongestHand(activeUnresolvedPlayers);
-    final List<Player> winners = getWinners(activeUnresolvedPlayers, strongestHand);
     final Player winner = winners.get(0);
     if (winner.getBalance() != 0) {
-      allocWinSumToWinners(winners, pot);
+      this.allocSumToWinners(pot);
       return;
     }
-    final int winnerMoney = winner.getMoneyInPot();
-    final List<Player> loserPlayers = getLoserPlayers(unresolvedPlayers, winners, winnerMoney);
-    final int lostAmount = getLostAmount(loserPlayers);
-    final int activePlayersInPot = getActivePlayersInPotAmount(unresolvedPlayers, winnerMoney);
-    final int winSum = (winnerMoney - this.prevAllInSum) * activePlayersInPot;
-    allocWinSumToWinners(winners, winSum + lostAmount);
+    this.winnerMoney = winner.getMoneyInPot();
+    final List<Player> loserPlayers = this.getLoserPlayers();
+    final int lostAmount = this.getLostAmount(loserPlayers);
+    final int activePlayersInPot = this.activePlayersInPotCount();
+    final int winSum = (this.winnerMoney - this.prevAllInSum) * activePlayersInPot;
+    this.allocSumToWinners(winSum + lostAmount);
     if (this.pot == 0) return;
     for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
     winner.setResolved();
-    this.prevAllInSum = winnerMoney;
-    handle();
+    this.setFields();
+    this.handle();
   }
 
-  private List<Player> getWinners(final List<Player> players, final int strongestHand) {
-    return players.stream().filter(player -> player.getCombination().ordinal() == strongestHand)
-        .sorted((w1, w2) -> w1.getMoneyInPot() - w2.getMoneyInPot()).toList();
+  private void setFields() {
+    this.unresolvedPlayers = Arrays.asList(players).stream().filter(Player::isUnresolved).toList();
+    this.activeUnresolvedPlayers = unresolvedPlayers.stream().filter(Player::isActive).toList();
+    this.strongestHand = this.getStrongestHand();
+    this.winners = this.getWinners();
+    this.prevAllInSum = this.winnerMoney;
   }
 
-  private List<Player> getLoserPlayers(final List<Player> players, final List<Player> winners, final int winnerMoney) {
-    return players.stream().filter(player -> player.getMoneyInPot() < winnerMoney && winners.indexOf(player) == -1)
-        .toList();
+  private List<Player> getWinners() {
+    return activeUnresolvedPlayers.stream().filter(this::winnersFilter).sorted(this::winnersSort).toList();
   }
 
-  private int getStrongestHand(final List<Player> players) {
-    return players.stream().mapToInt(player -> player.getCombination().ordinal()).reduce(0, Math::max);
+  private boolean winnersFilter(final Player player) {
+    return player.getCombination().ordinal() == strongestHand;
+  }
+
+  private int winnersSort(final Player w1, final Player w2) {
+    return w1.getMoneyInPot() - w2.getMoneyInPot();
+  }
+
+  private List<Player> getLoserPlayers() {
+    return unresolvedPlayers.stream().filter(this::losersFilter).toList();
+  }
+
+  private boolean losersFilter(final Player player) {
+    return player.getMoneyInPot() < winnerMoney && !winners.contains(player);
+  }
+
+  private int getStrongestHand() {
+    return activeUnresolvedPlayers.stream().mapToInt(this::playerCombinationVal).reduce(0, Math::max);
+  }
+
+  private int playerCombinationVal(final Player player) {
+    return player.getCombination().ordinal();
   }
 
   private int getLostAmount(final List<Player> players) {
@@ -51,13 +75,19 @@ public class WinnersHandler extends Handler {
     return totalLossAmount - this.prevAllInSum * players.size();
   }
 
-  private int getActivePlayersInPotAmount(final List<Player> players, final int winnerMoney) {
-    return players.stream().filter(pl -> pl.getMoneyInPot() >= winnerMoney).toArray().length;
+  private int activePlayersInPotCount() {
+    return unresolvedPlayers.stream().filter(this::playerMoneyInPotFilter).toArray().length;
   }
 
-  private void allocWinSumToWinners(final List<Player> winners, final int winSum) {
-    final int winnersSize = winners.size();
-    for (final Player winner : winners) winner.changeBalance(winSum / winnersSize);
+  private boolean playerMoneyInPotFilter(final Player player) {
+    return player.getMoneyInPot() >= winnerMoney;
+  }
+
+  private void allocSumToWinners(final int winSum) {
+    final int winnersSize = this.winners.size();
+    for (final Player winner : this.winners) {
+      winner.changeBalance(winSum / winnersSize);
+    }
     this.pot -= winSum;
   }
 
