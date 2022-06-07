@@ -3,13 +3,14 @@ package src;
 import java.util.*;
 
 import enums.Action;
+import enums.Combination;
 
 public final class Player {
   private final String nickname;
   private int balance;
   private int initialBalance;
   private List<Card> hand;
-  private boolean isBB = false;
+  private boolean isBigBlind = false;
   private boolean didFold = false;
   private boolean isResolved = false;
   private Combination combination = Combination.HIGH_CARD;
@@ -27,7 +28,7 @@ public final class Player {
   }
 
   public boolean canCheck(final int currRaiseSum, final boolean isPreflop) {
-    return currRaiseSum == 100 && (!isPreflop || this.isBB);
+    return currRaiseSum == 100 && (!isPreflop || this.isBigBlind);
   }
 
   public boolean isActive() {
@@ -54,26 +55,26 @@ public final class Player {
     return this.combination;
   }
 
-  public boolean isBB() {
-    return this.isBB;
+  public boolean isBigBlind() {
+    return this.isBigBlind;
   }
 
   public boolean isUnresolved() {
     return !this.isResolved;
   }
 
-  public void setBB() {
-    if (!this.isBB) {
-      this.isBB = true;
-      this.balance -= GameSession.BB_SIZE;
-      this.roundMoneyInPot += GameSession.BB_SIZE;
+  public void setBigBlind() {
+    if (!this.isBigBlind) {
+      this.isBigBlind = true;
+      this.balance -= GameSession.BIG_BLIND_SIZE;
+      this.roundMoneyInPot += GameSession.BIG_BLIND_SIZE;
     }
   }
 
-  public void setSB() {
-    if (!this.isBB) {
-      this.balance -= GameSession.SB_SIZE;
-      this.roundMoneyInPot += GameSession.SB_SIZE;
+  public void setSmallBlind() {
+    if (!this.isBigBlind) {
+      this.balance -= GameSession.SMALL_BLIND_SIZE;
+      this.roundMoneyInPot += GameSession.SMALL_BLIND_SIZE;
     }
   }
 
@@ -95,14 +96,14 @@ public final class Player {
   }
 
   public int putMoneyInPot(final int raiseSum, final Action action) {
-    final boolean isRaiseAction = action == Action.RAISE;
-    if (action != Action.CALL && !isRaiseAction) return 0;
+    final boolean isRaise = action == Action.RAISE;
+    if (action != Action.CALL && !isRaise) return 0;
     final int diff = Math.min(this.balance, raiseSum - this.roundMoneyInPot);
     this.balance -= diff;
     this.roundMoneyInPot += diff;
     final String allInStr = this.balance == 0 ? " (all in) " : "";
-    final String outputStr = isRaiseAction ? " raised to " + allInStr : " called " + diff;
-    System.out.println(this.nickname + outputStr + ", balance: " + this.balance);
+    final String actionStr = isRaise ? " raised to " + allInStr : " called " + diff;
+    System.out.println(this.nickname + actionStr + ", balance: " + this.balance);
     return diff;
   }
 
@@ -112,14 +113,16 @@ public final class Player {
   }
 
   public void check() {
-    final String bbStr = this.isBB ? " (big blind) " : " ";
-    System.out.println(this.nickname + bbStr + "checked, balance: " + this.balance);
+    final String bigBlindStr = this.isBigBlind ? " (big blind) " : " ";
+    System.out.println(this.nickname + bigBlindStr + "checked, balance: " + this.balance);
   }
 
   public void resetGameData() {
     final int delta = this.balance - this.initialBalance;
-    if (delta > 0) System.out.println(this.nickname + " won " + delta + ", new balance: " + this.balance);
-    this.isBB = false;
+    if (delta > 0) {
+      System.out.println(this.nickname + " won " + delta + ", new balance: " + this.balance);
+    }
+    this.isBigBlind = false;
     this.isResolved = false;
     this.initialBalance = this.balance;
     this.didFold = this.initialBalance == 0;

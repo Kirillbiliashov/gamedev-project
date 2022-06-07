@@ -1,14 +1,16 @@
 package src;
 
 import java.util.*;
+
+import enums.Combination;
 import staticClasses.*;
 
 public final class GameSession {
   public static final int PLAYERS_SEATED = 6;
   public static final int MIN_BALANCE = 5000;
   public static final int MAX_BALANCE = 25000;
-  public static final int BB_SIZE = 100;
-  public static final int SB_SIZE = 50;
+  public static final int BIG_BLIND_SIZE = 100;
+  public static final int SMALL_BLIND_SIZE = 50;
   public static final int MAX_FOLD_NUM = 4;
   public static final int MAX_CALL_NUM = 7;
   public static final int MAX_RAISE_NUM = 20;
@@ -27,8 +29,10 @@ public final class GameSession {
       final int BALANCE_ACCURACY = 5;
       for (int i = 0; i < PLAYERS_SEATED; i++) {
         final boolean isUser = i == 0;
-        final int playerBalance = Helpers.randomInRangeWithAccuracy(MIN_BALANCE, MAX_BALANCE, BALANCE_ACCURACY);
-        players[i] = new Player(isUser ? yourBalance : playerBalance, isUser ? nickname : "Player " + (i + 1));
+        final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE, BALANCE_ACCURACY);
+        final int balance = isUser ? yourBalance : playerBalance;
+        final String name = isUser ? nickname : "Player " + (i + 1);
+        players[i] = new Player(balance, name);
       }
     }
     this.newGame();
@@ -39,7 +43,9 @@ public final class GameSession {
     private final static String NEW_SYMBOL = " ";
 
     public static void presentTableCards() {
-      for (final Card card : tableCards) System.out.print(card.toString() + " ");
+      for (final Card card : tableCards) {
+        System.out.print(card.toString() + " ");
+      }
       System.out.println();
     }
 
@@ -59,7 +65,9 @@ public final class GameSession {
 
     private static void printHandDescription(final Player player) {
       final List<Card> hand = player.getHand();
-      System.out.print(hand.get(0).toString() + " and " + hand.get(1).toString());
+      final String firstHandStr = hand.get(0).toString();
+      final String secondHandStr = hand.get(1).toString();
+      System.out.print(firstHandStr + " and " + secondHandStr);
       printCombination(player.getCombination());
     }
 
@@ -93,7 +101,9 @@ public final class GameSession {
 
   private void dealHands() {
     final int CARDS_TO_DEAL = 2;
-    for (int i = 0; i < PLAYERS_SEATED; i++) players[i].setHand(Cards.deal(this.deck, CARDS_TO_DEAL));
+    for (int i = 0; i < PLAYERS_SEATED; i++) {
+      players[i].setHand(Cards.deal(this.deck, CARDS_TO_DEAL));
+    }
   }
 
   private void endGame() {

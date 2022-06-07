@@ -7,7 +7,7 @@ public final class Helpers {
     return (int) Math.round(Math.random() * (end - start)) + start;
   }
 
-  public static int randomInRangeWithAccuracy(final int start, final int end, final int accuracy) {
+  public static int randomInRange(final int start, final int end, final int accuracy) {
     final int randomNum = randomInRange(start, end);
     return randomNum - randomNum % accuracy;
   }

@@ -1,9 +1,7 @@
-package src;
+package enums;
 
 import java.util.*;
-import java.util.function.ToIntFunction;
-
-import enums.*;
+import src.Card;
 import staticClasses.Helpers;
 
 public enum Combination {
@@ -72,6 +70,7 @@ public enum Combination {
       final int OUTER_ITERATION_LIMIT = length - HIGHER_COMBINATION_CARDS_REQUIRED + 1;
       final int INNER_ITERATION_LIMIT = length - LOWER_COMBINATION_CARDS_REQUIRED + 1;
       final int threeOfKindRankVal;
+      boolean cond = false;
       for (int i = 0; i < OUTER_ITERATION_LIMIT; i++) {
         final int[] threeOfKindSubArr = Arrays.copyOfRange(rankValues, i, i + 3);
         if (Helpers.hasEqualNumbers(threeOfKindSubArr, 3)) {
@@ -80,12 +79,13 @@ public enum Combination {
             final int UPPER_LIMIT = m + LOWER_COMBINATION_CARDS_REQUIRED;
             final int[] pairSubArr = Arrays.copyOfRange(rankValues, m, UPPER_LIMIT);
             final boolean isPair = Helpers.hasEqualNumbers(pairSubArr, 2);
-            if (isPair && rankValues[m] != threeOfKindRankVal) return true;
+            cond = isPair && rankValues[m] != threeOfKindRankVal;
+            if (cond) return cond;
           }
-          return false;
+          return cond;
         }
       }
-      return false;
+      return cond;
     }
   },
   FOUR_OF_A_KIND {
