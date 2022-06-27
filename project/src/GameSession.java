@@ -29,7 +29,8 @@ public final class GameSession {
       final int BALANCE_ACCURACY = 5;
       for (int i = 0; i < PLAYERS_SEATED; i++) {
         final boolean isUser = i == 0;
-        final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE, BALANCE_ACCURACY);
+        final int playerBalance = Helpers.randomInRange(MIN_BALANCE, MAX_BALANCE,
+            BALANCE_ACCURACY);
         final int balance = isUser ? yourBalance : playerBalance;
         final String name = isUser ? nickname : "Player " + (i + 1);
         players[i] = new Player(balance, name);
@@ -50,7 +51,8 @@ public final class GameSession {
     }
 
     private static void printCombination(final Combination combination) {
-      final String combinationStr = Helpers.replaceSymbol(combination.toString(), OLD_SYMBOL, NEW_SYMBOL);
+      final String combinationStr = Helpers.replaceSymbol(combination.toString(),
+          OLD_SYMBOL, NEW_SYMBOL);
       System.out.println("(" + combinationStr.toLowerCase() + ")");
     }
 

@@ -16,7 +16,8 @@ public class RoundHandler extends Handler {
     super(players);
     this.pot = GameSession.BIG_BLIND_SIZE + GameSession.SMALL_BLIND_SIZE;
     this.actions.put(Action.FOLD, Player::fold);
-    this.actions.put(Action.CALL, (player) -> this.pot += player.putMoneyInPot(this.raiseSum, Action.CALL));
+    this.actions.put(Action.CALL, (player) -> this.pot += player.putMoneyInPot(this.raiseSum,
+        Action.CALL));
     this.actions.put(Action.RAISE, (player) -> handleRaiseAction(player));
     this.actions.put(Action.CHECK, Player::check);
   }
@@ -53,9 +54,11 @@ public class RoundHandler extends Handler {
   }
 
   public void assignPositions(final int handsPlayed) {
-    final int randomTablePosition = Helpers.randomInRange(0, GameSession.PLAYERS_SEATED - 1);
+    final int randomTablePosition = Helpers.randomInRange(0,
+        GameSession.PLAYERS_SEATED - 1);
     final int smallBlindIdx = handsPlayed == 1 ? randomTablePosition : this.bigBlindIdx;
-    this.bigBlindIdx = smallBlindIdx == GameSession.PLAYERS_SEATED - 1 ? 0 : smallBlindIdx + 1;
+    this.bigBlindIdx = smallBlindIdx == GameSession.PLAYERS_SEATED - 1 ? 0
+        : smallBlindIdx + 1;
     players[smallBlindIdx].setSmallBlind();
     players[this.bigBlindIdx].setBigBlind();
   }
@@ -87,10 +90,12 @@ public class RoundHandler extends Handler {
     final boolean canCheck = player.canCheck(this.raiseSum, this.isPreflop);
     final int RANGE_LENGTH = canCheck ? 12 : 10;
     final int handStrength = player.getCombination().ordinal();
-    final int MIN_CHECK_NUMBER = GameSession.MAX_CHECK_NUM - RANGE_LENGTH - handStrength;
+    final int MIN_CHECK_NUMBER = GameSession.MAX_CHECK_NUM - RANGE_LENGTH
+        - handStrength;
     final int MAX_CHECK_NUMBER = GameSession.MAX_CHECK_NUM - handStrength;
     final int MIN_RANDOM_NUMBER = canCheck ? MIN_CHECK_NUMBER : handStrength;
-    final int MAX_RANDOM_NUMBER = canCheck ? MAX_CHECK_NUMBER : RANGE_LENGTH + handStrength;
+    final int MAX_RANDOM_NUMBER = canCheck ? MAX_CHECK_NUMBER
+        : RANGE_LENGTH + handStrength;
     return Helpers.randomInRange(MIN_RANDOM_NUMBER, MAX_RANDOM_NUMBER);
   }
 
@@ -113,8 +118,10 @@ public class RoundHandler extends Handler {
     try {
       final String raiseStr = balance > this.raiseSum ? "Raise, " : "";
       final String cancCheckStr = canCheck ? " or Check: " : " Call, or Fold:  ";
-      System.out.print("Your balance is " + balance + ". Enter " + raiseStr + cancCheckStr);
-      final String inputStr = input.nextLine().substring(0, 2).toUpperCase();
+      System.out.print("Your balance is " + balance + ". Enter " + raiseStr +
+          cancCheckStr);
+      final String inputStr = input.nextLine().substring(0,
+          2).toUpperCase();
       for (final Action action : actionsArr) {
         if (action.toString().startsWith(inputStr)) return action;
       }
@@ -135,7 +142,8 @@ public class RoundHandler extends Handler {
       } else {
         final int MAX_RAISE_FACTOR = 5;
         final int RAISE_SUM_LIMIT = this.raiseSum * MAX_RAISE_FACTOR;
-        this.raiseSum += Helpers.randomInRange(this.raiseSum, RAISE_SUM_LIMIT, GameSession.SMALL_BLIND_SIZE);
+        this.raiseSum += Helpers.randomInRange(this.raiseSum, RAISE_SUM_LIMIT,
+            GameSession.SMALL_BLIND_SIZE);
       }
       this.pot += player.putMoneyInPot(this.raiseSum, Action.RAISE);
       this.playersPlayed = 1;

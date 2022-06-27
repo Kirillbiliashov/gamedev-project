@@ -14,7 +14,8 @@ import src.GameSession;
        } catch (Exception e) {
          balance = 10000;
        }
-     } while (balance < GameSession.MIN_BALANCE || balance > GameSession.MAX_BALANCE);
+     } while (balance < GameSession.MIN_BALANCE ||
+         balance > GameSession.MAX_BALANCE);
      new GameSession().start(balance, nickname);
    }
  }

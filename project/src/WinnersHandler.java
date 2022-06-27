@@ -25,7 +25,8 @@ public class WinnersHandler extends Handler {
     final List<Player> loserPlayers = this.getLoserPlayers();
     final int lostAmount = this.getLostAmount(loserPlayers);
     final int activePlayersInPot = this.activePlayersInPotCount();
-    final int winSum = (this.winnerMoney - this.prevAllInSum) * activePlayersInPot;
+    final int winSum = (this.winnerMoney - this.prevAllInSum) *
+        activePlayersInPot;
     this.allocSumToWinners(winSum + lostAmount);
     if (this.pot == 0) return;
     for (final Player lostPlayer : loserPlayers) lostPlayer.setResolved();
@@ -35,15 +36,18 @@ public class WinnersHandler extends Handler {
   }
 
   private void setFields() {
-    this.unresolvedPlayers = Arrays.asList(players).stream().filter(Player::isUnresolved).toList();
-    this.activeUnresolvedPlayers = unresolvedPlayers.stream().filter(Player::isActive).toList();
+    this.unresolvedPlayers = Arrays.asList(players).stream()
+        .filter(Player::isUnresolved).toList();
+    this.activeUnresolvedPlayers = unresolvedPlayers.stream()
+        .filter(Player::isActive).toList();
     this.strongestHand = this.getStrongestHand();
     this.winners = this.getWinners();
     this.prevAllInSum = this.winnerMoney;
   }
 
   private List<Player> getWinners() {
-    return activeUnresolvedPlayers.stream().filter(this::winnersFilter).sorted(this::winnersSort).toList();
+    return activeUnresolvedPlayers.stream().filter(this::winnersFilter)
+        .sorted(this::winnersSort).toList();
   }
 
   private boolean winnersFilter(final Player player) {
@@ -63,7 +67,8 @@ public class WinnersHandler extends Handler {
   }
 
   private int getStrongestHand() {
-    return activeUnresolvedPlayers.stream().mapToInt(this::playerCombinationVal).reduce(0, Math::max);
+    return activeUnresolvedPlayers.stream().mapToInt(this::playerCombinationVal)
+        .reduce(0, Math::max);
   }
 
   private int playerCombinationVal(final Player player) {
@@ -71,12 +76,14 @@ public class WinnersHandler extends Handler {
   }
 
   private int getLostAmount(final List<Player> players) {
-    final int totalLossAmount = players.stream().mapToInt(Player::getMoneyInPot).reduce(0, Math::addExact);
+    final int totalLossAmount = players.stream().mapToInt(Player::getMoneyInPot)
+        .reduce(0, Math::addExact);
     return totalLossAmount - this.prevAllInSum * players.size();
   }
 
   private int activePlayersInPotCount() {
-    return unresolvedPlayers.stream().filter(this::playerMoneyInPotFilter).toArray().length;
+    return unresolvedPlayers.stream().filter(this::playerMoneyInPotFilter)
+        .toArray().length;
   }
 
   private boolean playerMoneyInPotFilter(final Player player) {

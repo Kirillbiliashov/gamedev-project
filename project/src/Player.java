@@ -103,7 +103,8 @@ public final class Player {
     this.roundMoneyInPot += diff;
     final String allInStr = this.balance == 0 ? " (all in) " : "";
     final String actionStr = isRaise ? " raised to " + allInStr : " called " + diff;
-    System.out.println(this.nickname + actionStr + ", balance: " + this.balance);
+    System.out.println(this.nickname + actionStr + ", balance: "
+        + this.balance);
     return diff;
   }
 
@@ -114,13 +115,15 @@ public final class Player {
 
   public void check() {
     final String bigBlindStr = this.isBigBlind ? " (big blind) " : " ";
-    System.out.println(this.nickname + bigBlindStr + "checked, balance: " + this.balance);
+    System.out.println(this.nickname + bigBlindStr + "checked, balance: " +
+        this.balance);
   }
 
   public void resetGameData() {
     final int delta = this.balance - this.initialBalance;
     if (delta > 0) {
-      System.out.println(this.nickname + " won " + delta + ", new balance: " + this.balance);
+      System.out.println(this.nickname + " won " + delta + ", new balance: " +
+          this.balance);
     }
     this.isBigBlind = false;
     this.isResolved = false;

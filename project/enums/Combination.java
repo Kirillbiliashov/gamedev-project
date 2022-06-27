@@ -77,7 +77,8 @@ public enum Combination {
           threeOfKindRankVal = rankValues[i];
           for (int m = 0; m < INNER_ITERATION_LIMIT; m++) {
             final int UPPER_LIMIT = m + LOWER_COMBINATION_CARDS_REQUIRED;
-            final int[] pairSubArr = Arrays.copyOfRange(rankValues, m, UPPER_LIMIT);
+            final int[] pairSubArr = Arrays.copyOfRange(rankValues, m,
+                UPPER_LIMIT);
             final boolean isPair = Helpers.hasEqualNumbers(pairSubArr, 2);
             cond = isPair && rankValues[m] != threeOfKindRankVal;
             if (cond) return cond;
@@ -107,13 +108,15 @@ public enum Combination {
     public boolean check(final List<Card> cards) {
       final int maxValue = Rank.ACE.ordinal();
       final int lastIdx = cards.size() - 1;
-      final boolean isStraightFlush = STRAIGHT.check(cards) && FLUSH.check(cards);
+      final boolean isStraightFlush = STRAIGHT.check(cards) &&
+          FLUSH.check(cards);
       final int lastCardValue = cards.get(lastIdx).getRank().ordinal();
       return isStraightFlush && lastCardValue == maxValue;
     }
   };
 
-  private static <T> int[] getSortedValues(final List<Card> cards, final Class<T> enumClass) {
+  private static <T> int[] getSortedValues(final List<Card> cards,
+      final Class<T> enumClass) {
     final String rankClassName = Rank.class.getName();
     final String className = enumClass.getName();
     final boolean isRankClass = className.equals(rankClassName);

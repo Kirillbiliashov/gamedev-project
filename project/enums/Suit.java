@@ -6,7 +6,7 @@ public enum Suit {
   SPADES("♠️"),
   HEARTS("♥️");
 
-  private String emoji;
+  private final String emoji;
 
   private Suit(final String emoji) {
     this.emoji = emoji;

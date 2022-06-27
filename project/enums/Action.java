@@ -10,7 +10,7 @@ public enum Action {
   RAISE(new Range(GameSession.MAX_CALL_NUM + 1, GameSession.MAX_RAISE_NUM)),
   CHECK(new Range(GameSession.MAX_RAISE_NUM + 1, GameSession.MAX_CHECK_NUM));
 
-  private Range range;
+  private final Range range;
 
   private Action(final Range range) {
     this.range = range;

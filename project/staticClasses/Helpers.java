@@ -7,12 +7,14 @@ public final class Helpers {
     return (int) Math.round(Math.random() * (end - start)) + start;
   }
 
-  public static int randomInRange(final int start, final int end, final int accuracy) {
+  public static int randomInRange(final int start, final int end,
+      final int accuracy) {
     final int randomNum = randomInRange(start, end);
     return randomNum - randomNum % accuracy;
   }
 
-  public static <T> void transport(List<T> list1, List<T> list2, final int count) {
+  public static <T> void transport(List<? extends T> list1, List<? super T> list2,
+      final int count) {
     for (int i = 0; i < count; i++) {
       list2.add(list1.remove(i));
     }
@@ -28,7 +30,8 @@ public final class Helpers {
     return true;
   }
 
-  public static String replaceSymbol(final String str, final String oldStr, final String newStr) {
+  public static String replaceSymbol(final String str, final String oldStr,
+      final String newStr) {
     final StringBuilder sb = new StringBuilder(str);
     final int idx = sb.indexOf(oldStr);
     if (idx == -1) return str;
