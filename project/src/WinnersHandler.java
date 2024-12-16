@@ -1,6 +1,7 @@
 package src;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class WinnersHandler extends Handler {
   private int prevAllInSum;
@@ -37,17 +38,21 @@ public class WinnersHandler extends Handler {
 
   private void setFields() {
     this.unresolvedPlayers = Arrays.asList(players).stream()
-        .filter(Player::isUnresolved).toList();
+    .filter(Objects::nonNull)
+    .filter(Player::isUnresolved)
+    .collect(Collectors.toList());
     this.activeUnresolvedPlayers = unresolvedPlayers.stream()
-        .filter(Player::isActive).toList();
+    .filter(Objects::nonNull)
+    .filter(Player::isActive)
+    .collect(Collectors.toList());
     this.strongestHand = this.getStrongestHand();
     this.winners = this.getWinners();
     this.prevAllInSum = this.winnerMoney;
   }
 
   private List<Player> getWinners() {
-    return activeUnresolvedPlayers.stream().filter(this::winnersFilter)
-        .sorted(this::winnersSort).toList();
+    return activeUnresolvedPlayers.stream().filter(Objects::nonNull).filter(this::winnersFilter)
+        .sorted(this::winnersSort).collect(Collectors.toList());
   }
 
   private boolean winnersFilter(final Player player) {
@@ -59,7 +64,8 @@ public class WinnersHandler extends Handler {
   }
 
   private List<Player> getLoserPlayers() {
-    return unresolvedPlayers.stream().filter(this::losersFilter).toList();
+    return unresolvedPlayers.stream()
+    .filter(Objects::nonNull).filter(this::losersFilter).collect(Collectors.toList());
   }
 
   private boolean losersFilter(final Player player) {

@@ -102,7 +102,7 @@ public final class Player {
     this.balance -= diff;
     this.roundMoneyInPot += diff;
     final String allInStr = this.balance == 0 ? " (all in) " : "";
-    final String actionStr = isRaise ? " raised to " + allInStr : " called " + diff;
+    final String actionStr = isRaise ? " raised to " + String.valueOf(raiseSum) + allInStr : " called " + diff;
     System.out.println(this.nickname + actionStr + ", balance: "
         + this.balance);
     return diff;

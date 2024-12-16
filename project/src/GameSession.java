@@ -39,7 +39,7 @@ public final class GameSession {
     this.newGame();
   }
 
-  private class InfoLogger {
+  private static class InfoLogger {
     private final static String OLD_SYMBOL = "_";
     private final static String NEW_SYMBOL = " ";
 
@@ -97,7 +97,8 @@ public final class GameSession {
   }
 
   private void resetGameData() {
-    for (final Player player : players) player.resetGameData();
+    for (final Player player : players)
+      player.resetGameData();
     this.roundHandler.resetPotSize();
   }
 
